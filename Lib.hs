@@ -15,6 +15,8 @@ data Layer =
 		{ function :: NonLinearFunction
 		}
 
+type Network = [Layer]
+
 sigmoid :: NonLinearFunction
 sigmoid = (1 /) . (1 +) . exp . (0 -)
 
@@ -32,5 +34,5 @@ applyLayer input layer =
 		LinearLayer _ _ -> applyLinearLayer layer input
 		NonLinearLayer _ -> applyNonLinearLayer layer input
 
-forwardPropagateInput :: [Layer] -> Activation -> Activation
-forwardPropagateInput layers input = foldl applyLayer input layers
+forwardPropagateInput :: Network -> Activation -> Activation
+forwardPropagateInput network input = foldl applyLayer input network
