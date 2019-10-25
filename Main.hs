@@ -23,8 +23,8 @@ forwardPropagateInput input =
 	let
 		weight = 2.5 :: Weight
 		bias = (- 4.0) :: Bias
-		layer = Layer weight bias
-		linearLayer = applyLinearLayer layer input
-		nonLinearLayer = applyNonLinearLayer linearLayer
+		linearLayer = Layer weight bias
+		linearLayerActivation = applyLinearLayer linearLayer input
+		nonLinearLayerActivation = applyNonLinearLayer linearLayerActivation
 	in
-		nonLinearLayer
+		nonLinearLayerActivation
