@@ -55,3 +55,18 @@ applyLayer input layer =
 
 forwardPropagateInput :: Network -> [Activation] -> [Activation]
 forwardPropagateInput network input = foldl applyLayer input network
+
+getOutputWidth :: Network -> Width
+getOutputWidth = length . weights . last
+
+appendLayer :: Width -> Network -> LayerSpecification -> Network
+appendLayer inputWidth network specification =
+	let
+		previousWidth = if length network == 0 then inputWidth else getOutputWidth network
+		newLayer = case specification of
+			LinearLayerSpecification width -> LinearLayer (replicate width (replicate previousWidth 0)) (replicate width 0)
+			_ -> error "xxx"
+	in network ++ [newLayer]
+
+createNetwork :: Width -> [LayerSpecification] -> Network
+createNetwork inputWidth = foldl (appendLayer inputWidth) []
