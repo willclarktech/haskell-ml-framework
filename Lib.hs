@@ -9,7 +9,7 @@ type NonLinearFunction = Float -> Float
 data LinearLayer = LinearLayer
 	{ weight :: Weight
 	, bias :: Bias
-	}
+	} deriving (Show)
 
 data NonLinearLayer = NonLinearLayer
 	{ function :: NonLinearFunction
