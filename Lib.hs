@@ -1,5 +1,7 @@
 module Lib where
 
+import System.Random
+
 type Vector = [Float]
 type Matrix = [[Float]]
 
@@ -59,20 +61,48 @@ forwardPropagateInput network input = foldl applyLayer input network
 getOutputWidth :: Network -> Width
 getOutputWidth = length . weights . last
 
-initializeBiases :: Width -> [Bias]
-initializeBiases width = replicate width 0
+getRandomValues :: StdGen -> [Float]
+getRandomValues = randomRs (-1.0, 1.0)
 
-initializeWeights :: Width -> Width -> [[Weight]]
-initializeWeights previousWidth width = replicate width (replicate previousWidth 0)
+initializeBiases :: StdGen -> Width -> [Bias]
+initializeBiases g width = take width $ getRandomValues g
 
-appendLayer :: Width -> Network -> LayerSpecification -> Network
-appendLayer inputWidth network specification =
+initializeWeights :: StdGen -> Width -> Width -> [[Weight]]
+initializeWeights g previousWidth width =
+	let
+		randomValues = take (previousWidth * width) $ getRandomValues g
+		foldFn (ws, rs) _ =
+			let (rsNow, rsNext) = splitAt previousWidth rs
+			in (rsNow:ws, rsNext)
+		(weights, _) = foldl foldFn ([], randomValues) (replicate previousWidth 0)
+	in weights
+
+resolveNonLinearFunction :: String -> NonLinearFunction
+resolveNonLinearFunction name =
+	case name of
+		"sigmoid" -> sigmoid
+		"relu" -> relu
+		_ -> error "Non-linear function not supported"
+
+createLinearLayer :: StdGen -> Int -> Int -> Layer
+createLinearLayer g previousWidth width =
+	let (g1, g2) = split g
+	in LinearLayer (initializeWeights g1 previousWidth width) (initializeBiases g2 width)
+
+createNonLinearLayer :: String -> Layer
+createNonLinearLayer = NonLinearLayer . resolveNonLinearFunction
+
+appendLayer :: Width -> (StdGen, Network) -> LayerSpecification -> (StdGen, Network)
+appendLayer inputWidth (g, network) specification =
 	let
 		previousWidth = if length network == 0 then inputWidth else getOutputWidth network
 		newLayer = case specification of
-			LinearLayerSpecification width -> LinearLayer (initializeWeights previousWidth width) (initializeBiases width)
-			_ -> error "xxx"
-	in network ++ [newLayer]
+			LinearLayerSpecification width -> createLinearLayer g previousWidth width
+			NonLinearLayerSpecification name -> createNonLinearLayer name
+		newG = snd $ next g
+	in (newG, network ++ [newLayer])
 
-createNetwork :: Width -> [LayerSpecification] -> Network
-createNetwork inputWidth = foldl (appendLayer inputWidth) []
+createNetwork :: StdGen -> Width -> [LayerSpecification] -> Network
+createNetwork g inputWidth layerSpecifications =
+	let (_, network) = foldl (appendLayer inputWidth) (g, []) layerSpecifications
+	in network
