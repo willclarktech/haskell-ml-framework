@@ -24,11 +24,10 @@ applyLinearLayer (LinearLayer bias weight) = (+ bias) . (* weight)
 applyNonLinearLayer :: NonLinearLayer -> Activation -> Activation
 applyNonLinearLayer (NonLinearLayer function) = function
 
-forwardPropagateInput :: LinearLayer -> Activation -> Activation
-forwardPropagateInput linearLayer input =
+forwardPropagateInput :: LinearLayer -> NonLinearLayer -> Activation -> Activation
+forwardPropagateInput linearLayer nonLinearLayer input =
 	let
 		linearLayerActivation = applyLinearLayer linearLayer input
-		nonLinearLayer = NonLinearLayer sigmoid
 		nonLinearLayerActivation = applyNonLinearLayer nonLinearLayer linearLayerActivation
 	in
 		nonLinearLayerActivation
