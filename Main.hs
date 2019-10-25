@@ -2,12 +2,14 @@ type Activation = Float
 type Weight = Float
 type Bias = Float
 
+type NonLinearFunction = Float -> Float
+
 data Layer = Layer
 	{ weight :: Weight
 	, bias :: Bias
 	}
 
-sigmoid :: Float -> Float
+sigmoid :: NonLinearFunction
 sigmoid = (1 /) . (1 +) . exp . (0 -)
 
 applyLinearLayer :: Layer -> Activation -> Activation
