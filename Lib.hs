@@ -6,27 +6,32 @@ type Bias = Float
 
 type NonLinearFunction = Float -> Float
 
-data Layer = Layer
+data LinearLayer = LinearLayer
 	{ weight :: Weight
 	, bias :: Bias
+	}
+
+data NonLinearLayer = NonLinearLayer
+	{ function :: NonLinearFunction
 	}
 
 sigmoid :: NonLinearFunction
 sigmoid = (1 /) . (1 +) . exp . (0 -)
 
-applyLinearLayer :: Layer -> Activation -> Activation
-applyLinearLayer (Layer bias weight) = (+ bias) . (* weight)
+applyLinearLayer :: LinearLayer -> Activation -> Activation
+applyLinearLayer (LinearLayer bias weight) = (+ bias) . (* weight)
 
-applyNonLinearLayer :: Activation -> Activation
-applyNonLinearLayer = sigmoid
+applyNonLinearLayer :: NonLinearLayer -> Activation -> Activation
+applyNonLinearLayer (NonLinearLayer function) = function
 
 forwardPropagateInput :: Activation -> Activation
 forwardPropagateInput input =
 	let
 		weight = 2.5 :: Weight
 		bias = (- 4.0) :: Bias
-		linearLayer = Layer weight bias
+		linearLayer = LinearLayer weight bias
 		linearLayerActivation = applyLinearLayer linearLayer input
-		nonLinearLayerActivation = applyNonLinearLayer linearLayerActivation
+		nonLinearLayer = NonLinearLayer sigmoid
+		nonLinearLayerActivation = applyNonLinearLayer nonLinearLayer linearLayerActivation
 	in
 		nonLinearLayerActivation
