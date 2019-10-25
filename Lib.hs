@@ -20,6 +20,9 @@ type Network = [Layer]
 sigmoid :: NonLinearFunction
 sigmoid = (1 /) . (1 +) . exp . (0 -)
 
+relu :: NonLinearFunction
+relu n = if n > 0 then n else 0
+
 applyLinearLayer :: Layer -> Activation -> Activation
 applyLinearLayer (LinearLayer weight bias) = (+ bias) . (* weight)
 applyLinearLayer _ = error "Cannot apply non-linear layer"
