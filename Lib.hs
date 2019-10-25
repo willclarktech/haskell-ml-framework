@@ -23,19 +23,19 @@ sigmoid = (1 /) . (1 +) . exp . (0 -)
 relu :: NonLinearFunction
 relu n = if n > 0 then n else 0
 
-applyLinearLayer :: Layer -> Activation -> Activation
-applyLinearLayer (LinearLayer weight bias) = (+ bias) . (* weight)
+applyLinearLayer :: Layer -> [Activation] -> [Activation]
+applyLinearLayer (LinearLayer weight bias) = map ((+ bias) . (* weight))
 applyLinearLayer _ = error "Cannot apply non-linear layer"
 
-applyNonLinearLayer :: Layer -> Activation -> Activation
-applyNonLinearLayer (NonLinearLayer function) = function
+applyNonLinearLayer :: Layer -> [Activation] -> [Activation]
+applyNonLinearLayer (NonLinearLayer function) = map function
 applyNonLinearLayer _ = error "Cannot apply linear layer"
 
-applyLayer :: Activation -> Layer -> Activation
+applyLayer :: [Activation] -> Layer -> [Activation]
 applyLayer input layer =
 	case layer of
 		LinearLayer _ _ -> applyLinearLayer layer input
 		NonLinearLayer _ -> applyNonLinearLayer layer input
 
-forwardPropagateInput :: Network -> Activation -> Activation
+forwardPropagateInput :: Network -> [Activation] -> [Activation]
 forwardPropagateInput network input = foldl applyLayer input network
