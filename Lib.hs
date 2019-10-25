@@ -1,5 +1,8 @@
 module Lib where
 
+type Vector = [Float]
+type Matrix = [[Float]]
+
 type Activation = Float
 type Weight = Float
 type Bias = Float
