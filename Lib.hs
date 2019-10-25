@@ -12,7 +12,7 @@ type NonLinearFunction = Float -> Float
 data Layer =
 	LinearLayer
 		{ weights :: [[Weight]]
-		, bias :: Bias
+		, biases :: [Bias]
 		}
 	| NonLinearLayer
 		{ function :: NonLinearFunction
@@ -29,11 +29,13 @@ relu n = if n > 0 then n else 0
 weightedSum :: [Activation] -> [Weight] -> Activation
 weightedSum input = sum . (zipWith (*) input)
 
-weightedSumWithBias :: Bias -> [Activation] -> [Weight] -> Activation
-weightedSumWithBias bias input = (+ bias) . weightedSum input
+vectorMatrixMultiplication :: Vector -> Matrix -> Vector
+vectorMatrixMultiplication = map . weightedSum
 
 applyLinearLayer :: Layer -> [Activation] -> [Activation]
-applyLinearLayer (LinearLayer weights bias) input = map (weightedSumWithBias bias input) weights
+applyLinearLayer (LinearLayer weights biases) input =
+	let weightedSums = vectorMatrixMultiplication input weights
+	in zipWith (+) biases weightedSums
 applyLinearLayer _ _ = error "Cannot apply non-linear layer"
 
 applyNonLinearLayer :: Layer -> [Activation] -> [Activation]
