@@ -6,6 +6,7 @@ type Matrix = [[Float]]
 type Activation = Float
 type Weight = Float
 type Bias = Float
+type Width = Int
 
 type NonLinearFunction = Float -> Float
 
@@ -17,6 +18,10 @@ data Layer =
 	| NonLinearLayer
 		{ function :: NonLinearFunction
 		}
+
+data LayerSpecification =
+	LinearLayerSpecification Width
+	| NonLinearLayerSpecification String
 
 type Network = [Layer]
 
