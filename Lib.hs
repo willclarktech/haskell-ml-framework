@@ -8,7 +8,7 @@ type NonLinearFunction = Float -> Float
 
 data Layer =
 	LinearLayer
-		{ weight :: Weight
+		{ weights :: [[Weight]]
 		, bias :: Bias
 		}
 	| NonLinearLayer
@@ -23,9 +23,15 @@ sigmoid = (1 /) . (1 +) . exp . (0 -)
 relu :: NonLinearFunction
 relu n = if n > 0 then n else 0
 
+weightedSum :: [Activation] -> [Weight] -> Activation
+weightedSum input = sum . (zipWith (*) input)
+
+weightedSumWithBias :: Bias -> [Activation] -> [Weight] -> Activation
+weightedSumWithBias bias input = (+ bias) . weightedSum input
+
 applyLinearLayer :: Layer -> [Activation] -> [Activation]
-applyLinearLayer (LinearLayer weight bias) = map ((+ bias) . (* weight))
-applyLinearLayer _ = error "Cannot apply non-linear layer"
+applyLinearLayer (LinearLayer weights bias) input = map (weightedSumWithBias bias input) weights
+applyLinearLayer _ _ = error "Cannot apply non-linear layer"
 
 applyNonLinearLayer :: Layer -> [Activation] -> [Activation]
 applyNonLinearLayer (NonLinearLayer function) = map function
