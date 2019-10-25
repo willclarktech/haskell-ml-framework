@@ -19,7 +19,7 @@ sigmoid :: NonLinearFunction
 sigmoid = (1 /) . (1 +) . exp . (0 -)
 
 applyLinearLayer :: LinearLayer -> Activation -> Activation
-applyLinearLayer (LinearLayer bias weight) = (+ bias) . (* weight)
+applyLinearLayer (LinearLayer weight bias) = (+ bias) . (* weight)
 
 applyNonLinearLayer :: NonLinearLayer -> Activation -> Activation
 applyNonLinearLayer (NonLinearLayer function) = function
