@@ -16,6 +16,9 @@ data Layer =
 	| NonLinearLayer
 		{ function :: NonLinearFunction
 		}
+instance Show Layer where
+	show (LinearLayer weights biases) = "LinearLayer {weights = " ++ show weights ++ ", biases = " ++ show biases ++ "}"
+	show (NonLinearLayer function) = "NonLinearLayer {function = " ++ name function ++ "}"
 
 data LayerSpecification =
 	LinearLayerSpecification Width
