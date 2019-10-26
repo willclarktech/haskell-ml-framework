@@ -5,10 +5,13 @@ import Data.List
 type Vector = [Float]
 type Matrix = [[Float]]
 
-type CostFunction = ([Float], [Float]) -> Float
+data CostFunction = CostFunction
+	{ costFunctionName :: String
+	, costFunctionCalculate :: ([Float], [Float]) -> Float
+	}
 data NonLinearFunction = NonLinearFunction
-	{ name :: String
-	, fn :: Float -> Float
+	{ nonLinearName :: String
+	, nonLinearCalculate :: Float -> Float
 	}
 
 sigmoid :: NonLinearFunction
@@ -26,7 +29,7 @@ nonLinearFunctions = [sigmoid, relu]
 
 resolveNonLinearFunction :: String -> NonLinearFunction
 resolveNonLinearFunction requestedName =
-	let result = find ((requestedName ==) . name) nonLinearFunctions
+	let result = find ((requestedName ==) . nonLinearName) nonLinearFunctions
 	in case result of
 		Just nonLinearFunction -> nonLinearFunction
 		Nothing -> error "Non-linear function not found"
@@ -44,4 +47,6 @@ squaredError :: (Float, Float) -> Float
 squaredError (expected, actual) = (** 2) $ actual - expected
 
 meanSquaredError :: CostFunction
-meanSquaredError (expected, actual) = mean $ map squaredError $ zipWith (\a b -> (a, b)) expected actual
+meanSquaredError =
+	let fn (expected, actual) = mean $ map squaredError $ zipWith (\a b -> (a, b)) expected actual
+	in CostFunction "MSE" fn

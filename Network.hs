@@ -36,5 +36,5 @@ runIteration :: Network -> [Activation] -> [Activation] -> (Network, Float)
 runIteration network input expectedOutput =
 	let
 		output = forwardPropagateInput network input
-		err = costFunction network $ (expectedOutput, output)
+		err = costFunctionCalculate (costFunction network) $ (expectedOutput, output)
 	in (network, err)

@@ -18,7 +18,7 @@ data Layer =
 		}
 instance Show Layer where
 	show (LinearLayer weights biases) = "LinearLayer {weights = " ++ show weights ++ ", biases = " ++ show biases ++ "}"
-	show (NonLinearLayer function) = "NonLinearLayer {function = " ++ name function ++ "}"
+	show (NonLinearLayer function) = "NonLinearLayer {function = " ++ nonLinearName function
 
 data LayerSpecification =
 	LinearLayerSpecification Width
@@ -31,7 +31,7 @@ applyLinearLayer (LinearLayer weights biases) input =
 applyLinearLayer _ _ = error "Cannot apply non-linear layer"
 
 applyNonLinearLayer :: Layer -> [Activation] -> [Activation]
-applyNonLinearLayer (NonLinearLayer function) = map $ fn function
+applyNonLinearLayer (NonLinearLayer function) = map $ nonLinearCalculate function
 applyNonLinearLayer _ = error "Cannot apply linear layer"
 
 applyLayer :: [Activation] -> Layer -> [Activation]
