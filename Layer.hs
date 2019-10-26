@@ -60,3 +60,7 @@ createLinearLayer g previousWidth width =
 
 createNonLinearLayer :: String -> Layer
 createNonLinearLayer = NonLinearLayer . resolveNonLinearFunction
+
+createLayer :: StdGen -> Width -> LayerSpecification -> Layer
+createLayer g previousWidth (LinearLayerSpecification width) = createLinearLayer g previousWidth width
+createLayer _ _ (NonLinearLayerSpecification name) = createNonLinearLayer name

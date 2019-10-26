@@ -16,9 +16,7 @@ appendLayer :: Width -> (StdGen, Network) -> LayerSpecification -> (StdGen, Netw
 appendLayer inputWidth (g, network) specification =
 	let
 		previousWidth = getOutputWidth inputWidth network
-		newLayer = case specification of
-			LinearLayerSpecification width -> createLinearLayer g previousWidth width
-			NonLinearLayerSpecification name -> createNonLinearLayer name
+		newLayer = createLayer g previousWidth specification
 		newG = snd $ next g
 	in (newG, network ++ [newLayer])
 
