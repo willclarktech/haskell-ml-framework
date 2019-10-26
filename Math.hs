@@ -1,7 +1,5 @@
 module Math where
 
-import Data.List
-
 type Vector = [Float]
 type Matrix = [[Float]]
 
@@ -17,6 +15,13 @@ data NonLinearFunction = NonLinearFunction
 	}
 instance Show NonLinearFunction where
 	show (NonLinearFunction name _) = "NonLinearFunction: " ++ name
+
+find :: Foldable t => (a -> Bool) -> t a -> Maybe a
+find condition =
+	let fn candidate result
+		| condition candidate = Just candidate
+		| otherwise = result
+	in foldr fn Nothing
 
 sigmoid :: NonLinearFunction
 sigmoid =
