@@ -1,4 +1,4 @@
-module MlMath where
+module Math where
 
 type Vector = [Float]
 type Matrix = [[Float]]

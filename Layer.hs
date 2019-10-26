@@ -1,7 +1,7 @@
 module Layer where
 
 import System.Random
-import MlMath
+import Math
 
 type Activation = Float
 type Weight = Float

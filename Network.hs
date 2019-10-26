@@ -2,7 +2,7 @@ module Network where
 
 import System.Random
 import Layer
-import MlMath
+import Math
 
 data Network = Network
 	{ layers :: [Layer]
