@@ -23,3 +23,12 @@ weightedSum input = sum . (zipWith (*) input)
 
 vectorMatrixMultiplication :: Vector -> Matrix -> Vector
 vectorMatrixMultiplication = map . weightedSum
+
+mean :: [Float] -> Float
+mean ns = sum ns / fromIntegral (length ns)
+
+squaredError :: (Float, Float) -> Float
+squaredError (expected, actual) = (** 2) $ actual - expected
+
+meanSquaredError :: ([Float], [Float]) -> Float
+meanSquaredError (expected, actual) = mean $ map squaredError $ zipWith (\a b -> (a, b)) expected actual
