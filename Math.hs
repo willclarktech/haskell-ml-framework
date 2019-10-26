@@ -48,5 +48,5 @@ squaredError (expected, actual) = (** 2) $ actual - expected
 
 meanSquaredError :: CostFunction
 meanSquaredError =
-	let fn (expected, actual) = mean $ map squaredError $ zipWith (\a b -> (a, b)) expected actual
+	let fn = mean . (map squaredError) . (uncurry zip)
 	in CostFunction "MSE" fn
