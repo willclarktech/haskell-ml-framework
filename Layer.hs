@@ -28,7 +28,7 @@ applyLinearLayer (LinearLayer weights biases) input =
 applyLinearLayer _ _ = error "Cannot apply non-linear layer"
 
 applyNonLinearLayer :: Layer -> [Activation] -> [Activation]
-applyNonLinearLayer (NonLinearLayer function) = map function
+applyNonLinearLayer (NonLinearLayer function) = map $ fn function
 applyNonLinearLayer _ = error "Cannot apply linear layer"
 
 applyLayer :: [Activation] -> Layer -> [Activation]

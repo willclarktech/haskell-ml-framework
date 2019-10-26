@@ -1,23 +1,35 @@
 module Math where
 
+import Data.List
+
 type Vector = [Float]
 type Matrix = [[Float]]
 
-type NonLinearFunction = Float -> Float
 type CostFunction = ([Float], [Float]) -> Float
+data NonLinearFunction = NonLinearFunction
+	{ name :: String
+	, fn :: Float -> Float
+	}
 
 sigmoid :: NonLinearFunction
-sigmoid = (1 /) . (1 +) . exp . (0 -)
+sigmoid =
+	let fn = (1 /) . (1 +) . exp . (0 -)
+	in NonLinearFunction "sigmoid" fn
 
 relu :: NonLinearFunction
-relu n = if n > 0 then n else 0
+relu =
+	let fn n = if n > 0 then n else 0
+	in NonLinearFunction "relu" fn
+
+nonLinearFunctions :: [NonLinearFunction]
+nonLinearFunctions = [sigmoid, relu]
 
 resolveNonLinearFunction :: String -> NonLinearFunction
-resolveNonLinearFunction name =
-	case name of
-		"sigmoid" -> sigmoid
-		"relu" -> relu
-		_ -> error "Non-linear function not supported"
+resolveNonLinearFunction requestedName =
+	let result = find ((requestedName ==) . name) nonLinearFunctions
+	in case result of
+		Just nonLinearFunction -> nonLinearFunction
+		Nothing -> error "Non-linear function not found"
 
 weightedSum :: [Float] -> [Float] -> Float
 weightedSum input = sum . (zipWith (*) input)
