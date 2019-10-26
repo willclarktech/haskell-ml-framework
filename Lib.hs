@@ -1,16 +1,12 @@
 module Lib where
 
 import System.Random
-
-type Vector = [Float]
-type Matrix = [[Float]]
+import MlMath
 
 type Activation = Float
 type Weight = Float
 type Bias = Float
 type Width = Int
-
-type NonLinearFunction = Float -> Float
 
 data Layer =
 	LinearLayer
@@ -26,18 +22,6 @@ data LayerSpecification =
 	| NonLinearLayerSpecification String
 
 type Network = [Layer]
-
-sigmoid :: NonLinearFunction
-sigmoid = (1 /) . (1 +) . exp . (0 -)
-
-relu :: NonLinearFunction
-relu n = if n > 0 then n else 0
-
-weightedSum :: [Activation] -> [Weight] -> Activation
-weightedSum input = sum . (zipWith (*) input)
-
-vectorMatrixMultiplication :: Vector -> Matrix -> Vector
-vectorMatrixMultiplication = map . weightedSum
 
 applyLinearLayer :: Layer -> [Activation] -> [Activation]
 applyLinearLayer (LinearLayer weights biases) input =
@@ -80,13 +64,6 @@ initializeWeights g previousWidth width =
 			in (rsNow:ws, rsNext)
 		(weights, _) = foldl foldFn ([], randomValues) (replicate previousWidth 0)
 	in weights
-
-resolveNonLinearFunction :: String -> NonLinearFunction
-resolveNonLinearFunction name =
-	case name of
-		"sigmoid" -> sigmoid
-		"relu" -> relu
-		_ -> error "Non-linear function not supported"
 
 createLinearLayer :: StdGen -> Int -> Int -> Layer
 createLinearLayer g previousWidth width =
