@@ -1,4 +1,4 @@
-module Lib where
+module Network where
 
 import System.Random
 import Layer
