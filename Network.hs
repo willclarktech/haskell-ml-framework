@@ -30,12 +30,12 @@ createNetwork g inputWidth layerSpecifications =
 	let (_, layers) = foldl (appendLayer inputWidth) (g, []) layerSpecifications
 	in Network layers meanSquaredError
 
-forwardPropagateInputs :: Network -> [Input] -> [Output]
-forwardPropagateInputs network inputs = foldl applyLayer inputs $ layers network
+forwardPropagate :: Network -> [Input] -> [Output]
+forwardPropagate network inputs = foldl applyLayer inputs $ layers network
 
 runIteration :: Network -> [Input] -> [Output] -> (Network, Float)
 runIteration network inputs expectedOutputs =
 	let
-		outputs = forwardPropagateInputs network inputs
+		outputs = forwardPropagate network inputs
 		err = mean $ map (costFunctionCalculate (costFunction network)) $ zipWith (\a b -> (a, b)) expectedOutputs outputs
 	in (network, err)
