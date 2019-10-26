@@ -37,6 +37,5 @@ runIteration :: Network -> [Input] -> [Output] -> (Network, Float)
 runIteration network inputs expectedOutputs =
 	let
 		outputs = forwardPropagateInputs network inputs
-		errs = map (costFunctionCalculate (costFunction network)) $ zipWith (\a b -> (a, b)) expectedOutputs outputs
-		err = mean errs
+		err = mean $ map (costFunctionCalculate (costFunction network)) $ zipWith (\a b -> (a, b)) expectedOutputs outputs
 	in (network, err)
