@@ -4,6 +4,7 @@ type Vector = [Float]
 type Matrix = [[Float]]
 
 type NonLinearFunction = Float -> Float
+type CostFunction = ([Float], [Float]) -> Float
 
 sigmoid :: NonLinearFunction
 sigmoid = (1 /) . (1 +) . exp . (0 -)
@@ -30,5 +31,5 @@ mean ns = sum ns / fromIntegral (length ns)
 squaredError :: (Float, Float) -> Float
 squaredError (expected, actual) = (** 2) $ actual - expected
 
-meanSquaredError :: ([Float], [Float]) -> Float
+meanSquaredError :: CostFunction
 meanSquaredError (expected, actual) = mean $ map squaredError $ zipWith (\a b -> (a, b)) expected actual
