@@ -58,8 +58,12 @@ applyLayer input layer =
 forwardPropagateInput :: Network -> [Activation] -> [Activation]
 forwardPropagateInput network input = foldl applyLayer input network
 
-getOutputWidth :: Network -> Width
-getOutputWidth = length . weights . last
+getOutputWidth :: Width -> Network -> Width
+getOutputWidth inputWidth [] = inputWidth
+getOutputWidth inputWidth network =
+	case last network of
+		LinearLayer weights _ -> length weights
+		NonLinearLayer _ -> getOutputWidth inputWidth $ init network
 
 getRandomValues :: StdGen -> [Float]
 getRandomValues = randomRs (-1.0, 1.0)
@@ -95,7 +99,7 @@ createNonLinearLayer = NonLinearLayer . resolveNonLinearFunction
 appendLayer :: Width -> (StdGen, Network) -> LayerSpecification -> (StdGen, Network)
 appendLayer inputWidth (g, network) specification =
 	let
-		previousWidth = if length network == 0 then inputWidth else getOutputWidth network
+		previousWidth = getOutputWidth inputWidth network
 		newLayer = case specification of
 			LinearLayerSpecification width -> createLinearLayer g previousWidth width
 			NonLinearLayerSpecification name -> createNonLinearLayer name
