@@ -2,28 +2,37 @@ module Network where
 
 import System.Random
 import Layer
+import MlMath
 
-type Network = [Layer]
+data Network = Network
+	{ layers :: [Layer]
+	, costFunction :: CostFunction
+	}
 
-getOutputWidth :: Width -> Network -> Width
+getOutputWidth :: Width -> [Layer] -> Width
 getOutputWidth inputWidth [] = inputWidth
-getOutputWidth inputWidth network =
-	case last network of
+getOutputWidth inputWidth layers =
+	case last layers of
 		LinearLayer weights _ -> length weights
-		NonLinearLayer _ -> getOutputWidth inputWidth $ init network
+		NonLinearLayer _ -> getOutputWidth inputWidth $ init layers
 
-appendLayer :: Width -> (StdGen, Network) -> LayerSpecification -> (StdGen, Network)
-appendLayer inputWidth (g, network) specification =
+appendLayer :: Width -> (StdGen, [Layer]) -> LayerSpecification -> (StdGen, [Layer])
+appendLayer inputWidth (g, layers) specification =
 	let
-		previousWidth = getOutputWidth inputWidth network
+		previousWidth = getOutputWidth inputWidth layers
 		newLayer = createLayer g previousWidth specification
 		newG = snd $ next g
-	in (newG, network ++ [newLayer])
+	in (newG, layers ++ [newLayer])
 
 createNetwork :: StdGen -> Width -> [LayerSpecification] -> Network
 createNetwork g inputWidth layerSpecifications =
-	let (_, network) = foldl (appendLayer inputWidth) (g, []) layerSpecifications
-	in network
+	let (_, layers) = foldl (appendLayer inputWidth) (g, []) layerSpecifications
+	in Network layers meanSquaredError
 
 forwardPropagateInput :: Network -> [Activation] -> [Activation]
-forwardPropagateInput network input = foldl applyLayer input network
+forwardPropagateInput network input = foldl applyLayer input $ layers network
+
+runIteration :: Network -> [Activation] -> [Activation] -> Float
+runIteration network input expectedOutput =
+	let output = forwardPropagateInput network input
+	in costFunction network $ (expectedOutput, output)
