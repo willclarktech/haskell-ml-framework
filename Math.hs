@@ -43,6 +43,11 @@ resolveNonLinearFunction requestedName =
 		Just nonLinearFunction -> nonLinearFunction
 		Nothing -> error "Non-linear function not found"
 
+transpose :: Matrix -> Matrix
+transpose [] = []
+transpose ([]:_) = []
+transpose matrix = (map head matrix) : (transpose $ map tail matrix)
+
 weightedSum :: [Float] -> [Float] -> Float
 weightedSum input = sum . (zipWith (*) input)
 
