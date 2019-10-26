@@ -53,7 +53,7 @@ initializeWeights g previousWidth width =
 		foldFn (ws, rs) _ =
 			let (rsNow, rsNext) = splitAt previousWidth rs
 			in (rsNow:ws, rsNext)
-		(weights, _) = foldl foldFn ([], randomValues) (replicate previousWidth 0)
+		(weights, _) = foldl foldFn ([], randomValues) (replicate width 0)
 	in weights
 
 createLinearLayer :: StdGen -> Int -> Int -> Layer
