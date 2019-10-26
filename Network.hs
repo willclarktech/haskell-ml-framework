@@ -8,6 +8,7 @@ data Network = Network
 	{ layers :: [Layer]
 	, costFunction :: CostFunction
 	}
+	deriving (Show)
 
 getOutputWidth :: Width -> [Layer] -> Width
 getOutputWidth inputWidth [] = inputWidth

@@ -9,10 +9,14 @@ data CostFunction = CostFunction
 	{ costFunctionName :: String
 	, costFunctionCalculate :: ([Float], [Float]) -> Float
 	}
+instance Show CostFunction where
+	show (CostFunction name _) = "CostFunction: " ++ name
 data NonLinearFunction = NonLinearFunction
 	{ nonLinearName :: String
 	, nonLinearCalculate :: Float -> Float
 	}
+instance Show NonLinearFunction where
+	show (NonLinearFunction name _) = "NonLinearFunction: " ++ name
 
 sigmoid :: NonLinearFunction
 sigmoid =
