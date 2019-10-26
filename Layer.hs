@@ -3,10 +3,12 @@ module Layer where
 import System.Random
 import Math
 
-type Activation = Float
 type Weight = Float
 type Bias = Float
 type Width = Int
+type Activation = Float
+type Input = [Activation]
+type Output = [Activation]
 
 data Layer =
 	LinearLayer
