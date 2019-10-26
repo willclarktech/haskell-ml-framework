@@ -32,7 +32,9 @@ createNetwork g inputWidth layerSpecifications =
 forwardPropagateInput :: Network -> [Activation] -> [Activation]
 forwardPropagateInput network input = foldl applyLayer input $ layers network
 
-runIteration :: Network -> [Activation] -> [Activation] -> Float
+runIteration :: Network -> [Activation] -> [Activation] -> (Network, Float)
 runIteration network input expectedOutput =
-	let output = forwardPropagateInput network input
-	in costFunction network $ (expectedOutput, output)
+	let
+		output = forwardPropagateInput network input
+		err = costFunction network $ (expectedOutput, output)
+	in (network, err)
