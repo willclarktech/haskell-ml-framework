@@ -12,9 +12,10 @@ instance Show CostFunction where
 data NonLinearFunction = NonLinearFunction
 	{ nonLinearName :: String
 	, nonLinearCalculate :: Float -> Float
+	, nonLinearDerivative :: Float -> Float
 	}
 instance Show NonLinearFunction where
-	show (NonLinearFunction name _) = "NonLinearFunction: " ++ name
+	show (NonLinearFunction name _ _) = "NonLinearFunction: " ++ name
 
 find :: Foldable t => (a -> Bool) -> t a -> Maybe a
 find condition =
@@ -25,13 +26,17 @@ find condition =
 
 sigmoid :: NonLinearFunction
 sigmoid =
-	let fn = (1 /) . (1 +) . exp . (0 -)
-	in NonLinearFunction "sigmoid" fn
+	let
+		calculate = (1 /) . (1 +) . exp . (0 -)
+		derivative n = n * (1 - n)
+	in NonLinearFunction "sigmoid" calculate derivative
 
 relu :: NonLinearFunction
 relu =
-	let fn n = if n > 0 then n else 0
-	in NonLinearFunction "relu" fn
+	let
+		calculate n = if n > 0 then n else 0
+		derivative n = if n > 0 then 1 else 0
+	in NonLinearFunction "relu" calculate derivative
 
 nonLinearFunctions :: [NonLinearFunction]
 nonLinearFunctions = [sigmoid, relu]
