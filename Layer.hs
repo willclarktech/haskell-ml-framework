@@ -26,21 +26,25 @@ data LayerSpecification =
 	LinearLayerSpecification Width
 	| NonLinearLayerSpecification String
 
-applyLinearLayer :: Layer -> [Input] -> [Output]
-applyLinearLayer (LinearLayer _ weights biases) inputs =
-	let weightedSums = matrixMultiplication inputs weights
-	in map (zipWith (+) biases) weightedSums
-applyLinearLayer _ _ = error "Cannot apply non-linear layer"
+activateLinearLayer :: Layer -> [Input] -> Layer
+activateLinearLayer (LinearLayer _ weights biases) inputs =
+	let
+		weightedSums = matrixMultiplication inputs weights
+		activations = map (zipWith (+) biases) weightedSums
+	in LinearLayer (Just activations) weights biases
+activateLinearLayer _ _ = error "Cannot activate non-linear layer"
 
-applyNonLinearLayer :: Layer -> [Input] -> [Output]
-applyNonLinearLayer (NonLinearLayer _ function) = map $ map $ nonLinearCalculate function
-applyNonLinearLayer _ = error "Cannot apply linear layer"
+activateNonLinearLayer :: Layer -> [Input] -> Layer
+activateNonLinearLayer (NonLinearLayer _ function) inputs =
+	let activations = (map $ map $ nonLinearCalculate function) inputs
+	in NonLinearLayer (Just activations) function
+activateNonLinearLayer _ _ = error "Cannot activate linear layer"
 
-applyLayer :: [Input] -> Layer -> [Output]
-applyLayer inputs layer =
+activateLayer :: [Input] -> Layer -> Layer
+activateLayer inputs layer =
 	case layer of
-		LinearLayer _ _ _ -> applyLinearLayer layer inputs
-		NonLinearLayer _ _ -> applyNonLinearLayer layer inputs
+		LinearLayer _ _ _ -> activateLinearLayer layer inputs
+		NonLinearLayer _ _ -> activateNonLinearLayer layer inputs
 
 getRandomValues :: StdGen -> [Float]
 getRandomValues = randomRs (-1.0, 1.0)
