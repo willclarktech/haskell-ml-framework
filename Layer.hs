@@ -74,20 +74,20 @@ createLayer :: StdGen -> Width -> LayerSpecification -> Layer
 createLayer g previousWidth (LinearLayerSpecification width) = createLinearLayer g previousWidth width
 createLayer _ _ (NonLinearLayerSpecification name) = createNonLinearLayer name
 
-updateLayer :: Layer -> [Float] -> Layer
+updateLayer :: Layer -> [Float] -> (Layer, [Float])
 updateLayer (LinearLayer (Just activations) weights biases) errors =
 	let
 		meanActivations = map mean $ transpose activations
 		newWeights = zipWith (\e ws -> zipWith (\w a -> w - (e * a)) ws meanActivations) errors weights
 		newBiases = zipWith (-) biases errors
-	in LinearLayer Nothing newWeights newBiases
+		newErrors = vectorMatrixMultiplication errors (transpose weights)
+	in (LinearLayer Nothing newWeights newBiases, newErrors)
 updateLayer (NonLinearLayer (Just activations) function) errors =
-	NonLinearLayer Nothing function
+	let newErrors = map (nonLinearDerivative function) errors
+	in (NonLinearLayer Nothing function, newErrors)
 updateLayer layer _ = error "Layer not activated"
 
 updateNextLayer :: Layer -> ([Float], [Layer]) -> ([Float], [Layer])
 updateNextLayer layer (errors, previousLayers) =
-	let
-		updatedLayer = updateLayer layer errors
-		newErrors = errors
+	let (updatedLayer, newErrors) = updateLayer layer errors
 	in (newErrors, updatedLayer : previousLayers)
