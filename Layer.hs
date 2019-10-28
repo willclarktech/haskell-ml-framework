@@ -74,12 +74,14 @@ createLayer :: StdGen -> Width -> LayerSpecification -> Layer
 createLayer g previousWidth (LinearLayerSpecification width) = createLinearLayer g previousWidth width
 createLayer _ _ (NonLinearLayerSpecification name) = createNonLinearLayer name
 
-updateLayer :: Layer -> ([Float], [Layer]) -> ([Float], [Layer])
-updateLayer (LinearLayer _ weights biases) (errors, previousLayers) =
+updateNextLayer :: Layer -> ([Float], [Layer]) -> ([Float], [Layer])
+updateNextLayer (LinearLayer (Just activations) weights biases) (errors, previousLayers) =
 	let
-		newWeights = zipWith (\error -> map (\w -> w - error)) errors weights
+		meanActivations = map mean $ transpose activations
+		newWeights = zipWith (\e ws -> zipWith (\w a -> w - (e * a)) ws meanActivations) errors weights
 		newBiases = zipWith (-) biases errors
 		newErrors = errors
 		updatedLayer = LinearLayer Nothing newWeights newBiases
 	in (newErrors, updatedLayer : previousLayers)
-updateLayer layer (errors, previousLayers) = (errors, layer : previousLayers)
+-- updateNextLayer layer (errors, previousLayers) = (errors, layer : previousLayers)
+updateNextLayer _ _ = error "Layer type not supported"
