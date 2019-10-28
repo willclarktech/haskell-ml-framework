@@ -41,7 +41,7 @@ getOutputs = getFinalActivations . layers
 activateLayers :: [Input] -> [Layer] -> Layer -> [Layer]
 activateLayers networkInputs ls layer =
 	let layerInputs = if length ls == 0 then networkInputs else getFinalActivations ls
-	in activateLayer layerInputs layer : ls
+	in ls ++ [activateLayer layerInputs layer]
 
 forwardPropagate :: Network -> [Input] -> Network
 forwardPropagate (Network layers costFunction) inputs =
