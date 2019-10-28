@@ -33,9 +33,19 @@ createNetwork g inputWidth layerSpecifications =
 forwardPropagate :: Network -> [Input] -> [Output]
 forwardPropagate network inputs = foldl applyLayer inputs $ layers network
 
+backPropagate :: Network -> [(Output, Output)] -> Network
+backPropagate (Network layers costFunction) actualExpectedPairs =
+	let
+		errs = map (uncurry (zipWith (\a b -> 2 * (a - b)))) actualExpectedPairs
+		averagedErrs = map mean $ transpose errs
+		newLayers = snd $ foldr updateLayer (averagedErrs, []) layers
+	in Network newLayers costFunction
+
 runIteration :: Network -> [Input] -> [Output] -> (Network, Float)
 runIteration network inputs expectedOutputs =
 	let
 		outputs = forwardPropagate network inputs
-		err = mean $ map (costFunctionCalculate (costFunction network)) $ zipWith (\a b -> (a, b)) expectedOutputs outputs
-	in (network, err)
+		actualExpectedPairs = zip outputs expectedOutputs
+		err = mean $ map (costFunctionCalculate (costFunction network)) $ actualExpectedPairs
+		trained = backPropagate network actualExpectedPairs
+	in (trained, err)

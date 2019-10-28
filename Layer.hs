@@ -67,3 +67,13 @@ createNonLinearLayer = NonLinearLayer . resolveNonLinearFunction
 createLayer :: StdGen -> Width -> LayerSpecification -> Layer
 createLayer g previousWidth (LinearLayerSpecification width) = createLinearLayer g previousWidth width
 createLayer _ _ (NonLinearLayerSpecification name) = createNonLinearLayer name
+
+updateLayer :: Layer -> ([Float], [Layer]) -> ([Float], [Layer])
+updateLayer (LinearLayer weights biases) (errors, previousLayers) =
+	let
+		newWeights = zipWith (\error -> map (\w -> w - error)) errors weights
+		newBiases = zipWith (-) biases errors
+		newErrors = errors
+		updatedLayer = LinearLayer newWeights newBiases
+	in (newErrors, updatedLayer : previousLayers)
+updateLayer layer (errors, previousLayers) = (errors, layer : previousLayers)

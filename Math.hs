@@ -63,7 +63,7 @@ mean :: [Float] -> Float
 mean ns = sum ns / fromIntegral (length ns)
 
 squaredError :: (Float, Float) -> Float
-squaredError (expected, actual) = (** 2) $ actual - expected
+squaredError (actual, expected) = (** 2) $ actual - expected
 
 meanSquaredError :: CostFunction
 meanSquaredError =
