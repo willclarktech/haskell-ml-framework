@@ -14,7 +14,7 @@ getOutputWidth :: Width -> [Layer] -> Width
 getOutputWidth inputWidth [] = inputWidth
 getOutputWidth inputWidth layers =
 	case last layers of
-		LinearLayer _ weights _ -> length weights
+		LinearLayer _ _ weights _ -> length weights
 		NonLinearLayer _ _ -> getOutputWidth inputWidth $ init layers
 
 appendLayer :: Width -> (StdGen, [Layer]) -> LayerSpecification -> (StdGen, [Layer])

@@ -13,6 +13,7 @@ type Output = [Activation]
 data Layer =
 	LinearLayer
 		{ activations :: Maybe [Output]
+		, inputs :: Maybe [Input]
 		, weights :: [[Weight]]
 		, biases :: [Bias]
 		}
@@ -27,11 +28,11 @@ data LayerSpecification =
 	| NonLinearLayerSpecification String
 
 activateLinearLayer :: Layer -> [Input] -> Layer
-activateLinearLayer (LinearLayer _ weights biases) inputs =
+activateLinearLayer (LinearLayer _ _ weights biases) inputs =
 	let
 		weightedSums = matrixMultiplication inputs weights
 		activations = map (zipWith (+) biases) weightedSums
-	in LinearLayer (Just activations) weights biases
+	in LinearLayer (Just activations) (Just inputs) weights biases
 activateLinearLayer _ _ = error "Cannot activate non-linear layer"
 
 activateNonLinearLayer :: Layer -> [Input] -> Layer
@@ -43,7 +44,7 @@ activateNonLinearLayer _ _ = error "Cannot activate linear layer"
 activateLayer :: [Input] -> Layer -> Layer
 activateLayer inputs layer =
 	case layer of
-		LinearLayer _ _ _ -> activateLinearLayer layer inputs
+		LinearLayer _ _ _ _ -> activateLinearLayer layer inputs
 		NonLinearLayer _ _ -> activateNonLinearLayer layer inputs
 
 getRandomValues :: StdGen -> [Float]
@@ -65,7 +66,7 @@ initializeWeights g previousWidth width =
 createLinearLayer :: StdGen -> Int -> Int -> Layer
 createLinearLayer g previousWidth width =
 	let (g1, g2) = split g
-	in LinearLayer Nothing (initializeWeights g1 previousWidth width) (initializeBiases g2 width)
+	in LinearLayer Nothing Nothing (initializeWeights g1 previousWidth width) (initializeBiases g2 width)
 
 createNonLinearLayer :: String -> Layer
 createNonLinearLayer = NonLinearLayer Nothing . resolveNonLinearFunction
@@ -75,17 +76,17 @@ createLayer g previousWidth (LinearLayerSpecification width) = createLinearLayer
 createLayer _ _ (NonLinearLayerSpecification name) = createNonLinearLayer name
 
 updateLayer :: Layer -> [Float] -> (Layer, [Float])
-updateLayer (LinearLayer (Just activations) weights biases) errors =
+updateLayer (LinearLayer _ (Just inputs) weights biases) errors =
 	let
-		meanActivations = map mean $ transpose activations
-		newWeights = zipWith (\e ws -> zipWith (\w a -> w - (e * a)) ws meanActivations) errors weights
+		meanInputs = map mean $ transpose inputs
+		newWeights = zipWith (\e ws -> zipWith (\w i -> w - (e * i)) ws meanInputs) errors weights
 		newBiases = zipWith (-) biases errors
-		newErrors = vectorMatrixMultiplication errors (transpose weights)
-	in (LinearLayer Nothing newWeights newBiases, newErrors)
-updateLayer (NonLinearLayer (Just activations) function) errors =
+		newErrors = map sum $ transpose $ zipWith (\e -> map (* e) ) errors weights
+	in (LinearLayer Nothing Nothing newWeights newBiases, newErrors)
+updateLayer (NonLinearLayer _ function) errors =
 	let newErrors = map (nonLinearDerivative function) errors
 	in (NonLinearLayer Nothing function, newErrors)
-updateLayer layer _ = error "Layer not activated"
+updateLayer _ _ = error "Cannot update non-activated layer"
 
 updateNextLayer :: Layer -> ([Float], [Layer]) -> ([Float], [Layer])
 updateNextLayer layer (errors, previousLayers) =
