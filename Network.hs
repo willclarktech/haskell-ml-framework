@@ -4,9 +4,12 @@ import System.Random
 import Layer
 import Math
 
+type MiniBatch = ([Input], [Output])
+
 data Network = Network
 	{ costFunction :: CostFunction
 	, alpha :: Float
+	, miniBatchSize :: Int
 	, layers :: [Layer]
 	}
 	deriving (Show)
@@ -26,10 +29,10 @@ appendLayer inputWidth (g, layers) specification =
 		newG = snd $ next g
 	in (newG, layers ++ [newLayer])
 
-createNetwork :: StdGen -> Float -> Width -> [LayerSpecification] -> Network
-createNetwork g alpha inputWidth layerSpecifications =
+createNetwork :: StdGen -> Float -> Int -> Width -> [LayerSpecification] -> Network
+createNetwork g alpha miniBatchSize inputWidth layerSpecifications =
 	let (_, layers) = foldl (appendLayer inputWidth) (g, []) layerSpecifications
-	in Network meanSquaredError alpha layers
+	in Network meanSquaredError alpha miniBatchSize layers
 
 getFinalActivations :: [Layer] -> [Output]
 getFinalActivations [] = error "No layers"
@@ -46,20 +49,29 @@ activateLayers networkInputs ls layer =
 	in ls ++ [activateLayer layerInputs layer]
 
 forwardPropagate :: Network -> [Input] -> Network
-forwardPropagate (Network costFunction alpha layers) inputs =
+forwardPropagate (Network costFunction alpha miniBatchSize layers) inputs =
 	let activatedLayers = foldl (activateLayers inputs) [] $ layers
-	in Network costFunction alpha activatedLayers
+	in Network costFunction alpha miniBatchSize activatedLayers
 
 calculateNetworkError :: Network -> [(Output, Output)] -> Float
-calculateNetworkError (Network costFunction _ _) = mean . (map (costFunctionCalculate costFunction))
+calculateNetworkError (Network costFunction _ _ _) = mean . (map (costFunctionCalculate costFunction))
 
 backPropagate :: Network -> [(Output, Output)] -> Network
-backPropagate (Network costFunction alpha layers) actualExpectedPairs =
+backPropagate (Network costFunction alpha miniBatchSize layers) actualExpectedPairs =
 	let
 		errs = map (costFunctionDerivative costFunction) actualExpectedPairs
 		averagedErrs = map mean $ transpose errs
 		newLayers = snd $ foldr (updateNextLayer alpha) (averagedErrs, []) layers
-	in Network costFunction alpha newLayers
+	in Network costFunction alpha miniBatchSize newLayers
+
+divideInputsIntoMiniBatches :: Int -> [Input] -> [Output] -> [MiniBatch]
+divideInputsIntoMiniBatches size [] _ = []
+divideInputsIntoMiniBatches size _ [] = []
+divideInputsIntoMiniBatches size inputs outputs =
+	let
+		(miniBatchInputs, remainingInputs) = splitAt size inputs
+		(miniBatchOutputs, remainingOutputs) = splitAt size outputs
+	in (miniBatchInputs, miniBatchOutputs) : divideInputsIntoMiniBatches size remainingInputs remainingOutputs
 
 runIteration :: Network -> [Input] -> [Output] -> (Network, Float)
 runIteration network inputs expectedOutputs =
@@ -71,7 +83,15 @@ runIteration network inputs expectedOutputs =
 		trained = backPropagate activatedNetwork actualExpectedPairs
 	in (trained, err)
 
+runMiniBatch :: MiniBatch -> (Network, Float) -> (Network, Float)
+runMiniBatch (inputs, expectedOutputs) (network, _) = runIteration network inputs expectedOutputs
+
+runIterationWithMiniBatches :: Network -> [MiniBatch] -> (Network, Float)
+runIterationWithMiniBatches network = foldr runMiniBatch (network, 0.0)
+
 run :: Int -> Network -> [Input] -> [Output] -> (Network, Float)
+run n _ _ _
+	| n < 0 = error "Iterations cannot be negative"
 run 0 network inputs expectedOutputs =
 	let
 		activatedNetwork = forwardPropagate network inputs
@@ -79,9 +99,10 @@ run 0 network inputs expectedOutputs =
 		actualExpectedPairs = zip outputs expectedOutputs
 		err = calculateNetworkError activatedNetwork actualExpectedPairs
 	in (activatedNetwork, err)
-run 1 network inputs expectedOutputs = runIteration network inputs expectedOutputs
-run n network inputs expectedOutputs
-	| n > 1 =
-		let (trained, _) = runIteration network inputs expectedOutputs
-		in run (n - 1) trained inputs expectedOutputs
-	| otherwise = error "Iterations cannot be negative"
+run n network inputs expectedOutputs =
+	let
+		miniBatches = divideInputsIntoMiniBatches (miniBatchSize network) inputs expectedOutputs
+		(trained, err) = runIterationWithMiniBatches network miniBatches
+	in case n of
+		1 -> (trained, err)
+		_ -> run (n - 1) trained inputs expectedOutputs
