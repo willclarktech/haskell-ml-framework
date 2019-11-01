@@ -5,8 +5,8 @@ import Layer
 import Math
 
 data Network = Network
-	{ layers :: [Layer]
-	, costFunction :: CostFunction
+	{ costFunction :: CostFunction
+	, layers :: [Layer]
 	}
 	deriving (Show)
 
@@ -28,7 +28,7 @@ appendLayer inputWidth (g, layers) specification =
 createNetwork :: StdGen -> Width -> [LayerSpecification] -> Network
 createNetwork g inputWidth layerSpecifications =
 	let (_, layers) = foldl (appendLayer inputWidth) (g, []) layerSpecifications
-	in Network layers meanSquaredError
+	in Network meanSquaredError layers
 
 getFinalActivations :: [Layer] -> [Output]
 getFinalActivations layers = case activations $ last layers of
@@ -44,17 +44,17 @@ activateLayers networkInputs ls layer =
 	in ls ++ [activateLayer layerInputs layer]
 
 forwardPropagate :: Network -> [Input] -> Network
-forwardPropagate (Network layers costFunction) inputs =
+forwardPropagate (Network costFunction layers) inputs =
 	let activatedLayers = foldl (activateLayers inputs) [] $ layers
-	in Network activatedLayers costFunction
+	in Network costFunction activatedLayers
 
 backPropagate :: Network -> [(Output, Output)] -> Network
-backPropagate (Network layers costFunction) actualExpectedPairs =
+backPropagate (Network costFunction layers) actualExpectedPairs =
 	let
 		errs = map (uncurry (zipWith (\a b -> 2 * (a - b)))) actualExpectedPairs
 		averagedErrs = map mean $ transpose errs
 		newLayers = snd $ foldr updateNextLayer (averagedErrs, []) layers
-	in Network newLayers costFunction
+	in Network costFunction newLayers
 
 runIteration :: Network -> [Input] -> [Output] -> (Network, Float)
 runIteration network inputs expectedOutputs =
