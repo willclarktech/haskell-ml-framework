@@ -6,9 +6,10 @@ type Matrix = [[Float]]
 data CostFunction = CostFunction
 	{ costFunctionName :: String
 	, costFunctionCalculate :: ([Float], [Float]) -> Float
+	, costFunctionDerivative :: ([Float], [Float]) -> [Float]
 	}
 instance Show CostFunction where
-	show (CostFunction name _) = "CostFunction: " ++ name
+	show (CostFunction name _ _) = "CostFunction: " ++ name
 data NonLinearFunction = NonLinearFunction
 	{ nonLinearName :: String
 	, nonLinearCalculate :: Float -> Float
@@ -65,10 +66,15 @@ matrixMultiplication matrix1 matrix2 = map (\row -> vectorMatrixMultiplication r
 mean :: [Float] -> Float
 mean ns = sum ns / fromIntegral (length ns)
 
-squaredError :: (Float, Float) -> Float
-squaredError (actual, expected) = (** 2) $ actual - expected
+squaredError :: Float -> Float -> Float
+squaredError actual = (** 2) . (actual -)
+
+squaredErrorDerivative :: Float -> Float -> Float
+squaredErrorDerivative actual = (2 *) . (actual -)
 
 meanSquaredError :: CostFunction
 meanSquaredError =
-	let fn = mean . (map squaredError) . (uncurry zip)
-	in CostFunction "MSE" fn
+	let
+		calculate = mean . (uncurry (zipWith squaredError))
+		derivative = uncurry (zipWith squaredErrorDerivative)
+	in CostFunction "MSE" calculate derivative

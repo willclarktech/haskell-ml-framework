@@ -51,7 +51,7 @@ forwardPropagate (Network costFunction layers) inputs =
 backPropagate :: Network -> [(Output, Output)] -> Network
 backPropagate (Network costFunction layers) actualExpectedPairs =
 	let
-		errs = map (uncurry (zipWith (\a b -> 2 * (a - b)))) actualExpectedPairs
+		errs = map (costFunctionDerivative costFunction) actualExpectedPairs
 		averagedErrs = map mean $ transpose errs
 		newLayers = snd $ foldr updateNextLayer (averagedErrs, []) layers
 	in Network costFunction newLayers
