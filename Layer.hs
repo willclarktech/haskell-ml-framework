@@ -70,7 +70,7 @@ updateLayer alpha (LinearLayer _ (Just inputs) weights biases) errors =
 	let
 		meanInputs = map mean $ transpose inputs
 		newWeights = zipWith (\e ws -> zipWith (\w i -> w - (e * i * alpha)) ws meanInputs) errors weights
-		newBiases = zipWith (-) biases errors
+		newBiases = zipWith (-) biases (map (* alpha) errors)
 		newErrors = map sum $ transpose $ zipWith (\e -> map (* e) ) errors weights
 	in (LinearLayer Nothing Nothing newWeights newBiases, newErrors)
 updateLayer _ (NonLinearLayer _ function) errors =
