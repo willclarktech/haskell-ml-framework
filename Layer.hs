@@ -65,13 +65,25 @@ createLayer :: StdGen -> Width -> LayerSpecification -> Layer
 createLayer g previousWidth (LinearLayerSpecification width) = createLinearLayer g previousWidth width
 createLayer _ _ (NonLinearLayerSpecification name) = createNonLinearLayer name
 
+updateWeight :: Float -> Float -> Activation -> Weight -> Weight
+updateWeight alpha err activation weight = weight - (err * activation * alpha)
+
+updatePartialWeights :: Float -> Input -> Float -> [Weight] -> [Weight]
+updatePartialWeights alpha inputs err = zipWith (updateWeight alpha err) inputs
+
+updateBias :: Float -> Float -> Bias -> Bias
+updateBias alpha err bias = bias - (err * alpha)
+
+calculateNextErrors :: [[Weight]] -> [Float] -> [Float]
+calculateNextErrors weights errors = map sum $ transpose $ zipWith (\e -> map (* e) ) errors weights
+
 updateLayer :: Float -> Layer -> [Float] -> (Layer, [Float])
 updateLayer alpha (LinearLayer _ (Just inputs) weights biases) errors =
 	let
-		meanInputs = map mean $ transpose inputs
-		newWeights = zipWith (\e ws -> zipWith (\w i -> w - (e * i * alpha)) ws meanInputs) errors weights
-		newBiases = zipWith (-) biases (map (* alpha) errors)
-		newErrors = map sum $ transpose $ zipWith (\e -> map (* e) ) errors weights
+		meanInput = map mean $ transpose inputs
+		newWeights = zipWith (updatePartialWeights alpha meanInput) errors weights
+		newBiases = zipWith (updateBias alpha) errors biases
+		newErrors = calculateNextErrors weights errors
 	in (LinearLayer Nothing Nothing newWeights newBiases, newErrors)
 updateLayer _ (NonLinearLayer _ function) errors =
 	let newErrors = map (nonLinearDerivative function) errors
