@@ -31,6 +31,7 @@ createNetwork g inputWidth layerSpecifications =
 	in Network meanSquaredError layers
 
 getFinalActivations :: [Layer] -> [Output]
+getFinalActivations [] = error "No layers"
 getFinalActivations layers = case activations $ last layers of
 	Nothing -> error "Final layer not activated"
 	Just a -> a
