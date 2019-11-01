@@ -66,3 +66,18 @@ runIteration network inputs expectedOutputs =
 		err = mean $ map (costFunctionCalculate (costFunction network)) $ actualExpectedPairs
 		trained = backPropagate activatedNetwork actualExpectedPairs
 	in (trained, err)
+
+run :: Int -> Network -> [Input] -> [Output] -> (Network, Float)
+run 0 network inputs expectedOutputs =
+	let
+		activatedNetwork = forwardPropagate network inputs
+		outputs = getOutputs activatedNetwork
+		actualExpectedPairs = zip outputs expectedOutputs
+		err = mean $ map (costFunctionCalculate (costFunction network)) $ actualExpectedPairs
+	in (activatedNetwork, err)
+run 1 network inputs expectedOutputs = runIteration network inputs expectedOutputs
+run n network inputs expectedOutputs
+	| n > 1 =
+		let (trained, _) = runIteration network inputs expectedOutputs
+		in run (n - 1) trained inputs expectedOutputs
+	| otherwise = error "Iterations cannot be negative"
