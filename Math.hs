@@ -60,9 +60,7 @@ vectorMatrixMultiplication :: Vector -> Matrix -> Vector
 vectorMatrixMultiplication = map . weightedSum
 
 matrixMultiplication :: Matrix -> Matrix -> Matrix
-matrixMultiplication matrix1 matrix2 =
-    let transposedMatrix = transpose matrix2
-    in map (\row -> vectorMatrixMultiplication row transposedMatrix) matrix1
+matrixMultiplication matrix1 matrix2 = map (\row -> vectorMatrixMultiplication row matrix2) matrix1
 
 mean :: [Float] -> Float
 mean ns = sum ns / fromIntegral (length ns)
