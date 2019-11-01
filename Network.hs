@@ -6,6 +6,7 @@ import Math
 
 data Network = Network
 	{ costFunction :: CostFunction
+	, alpha :: Float
 	, layers :: [Layer]
 	}
 	deriving (Show)
@@ -25,10 +26,10 @@ appendLayer inputWidth (g, layers) specification =
 		newG = snd $ next g
 	in (newG, layers ++ [newLayer])
 
-createNetwork :: StdGen -> Width -> [LayerSpecification] -> Network
-createNetwork g inputWidth layerSpecifications =
+createNetwork :: StdGen -> Float -> Width -> [LayerSpecification] -> Network
+createNetwork g alpha inputWidth layerSpecifications =
 	let (_, layers) = foldl (appendLayer inputWidth) (g, []) layerSpecifications
-	in Network meanSquaredError layers
+	in Network meanSquaredError alpha layers
 
 getFinalActivations :: [Layer] -> [Output]
 getFinalActivations [] = error "No layers"
@@ -45,20 +46,20 @@ activateLayers networkInputs ls layer =
 	in ls ++ [activateLayer layerInputs layer]
 
 forwardPropagate :: Network -> [Input] -> Network
-forwardPropagate (Network costFunction layers) inputs =
+forwardPropagate (Network costFunction alpha layers) inputs =
 	let activatedLayers = foldl (activateLayers inputs) [] $ layers
-	in Network costFunction activatedLayers
+	in Network costFunction alpha activatedLayers
 
 calculateNetworkError :: Network -> [(Output, Output)] -> Float
 calculateNetworkError (Network costFunction _ _) = mean . (map (costFunctionCalculate costFunction))
 
 backPropagate :: Network -> [(Output, Output)] -> Network
-backPropagate (Network costFunction layers) actualExpectedPairs =
+backPropagate (Network costFunction alpha layers) actualExpectedPairs =
 	let
 		errs = map (costFunctionDerivative costFunction) actualExpectedPairs
 		averagedErrs = map mean $ transpose errs
-		newLayers = snd $ foldr updateNextLayer (averagedErrs, []) layers
-	in Network costFunction newLayers
+		newLayers = snd $ foldr (updateNextLayer alpha) (averagedErrs, []) layers
+	in Network costFunction alpha newLayers
 
 runIteration :: Network -> [Input] -> [Output] -> (Network, Float)
 runIteration network inputs expectedOutputs =

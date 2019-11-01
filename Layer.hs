@@ -65,20 +65,20 @@ createLayer :: StdGen -> Width -> LayerSpecification -> Layer
 createLayer g previousWidth (LinearLayerSpecification width) = createLinearLayer g previousWidth width
 createLayer _ _ (NonLinearLayerSpecification name) = createNonLinearLayer name
 
-updateLayer :: Layer -> [Float] -> (Layer, [Float])
-updateLayer (LinearLayer _ (Just inputs) weights biases) errors =
+updateLayer :: Float -> Layer -> [Float] -> (Layer, [Float])
+updateLayer alpha (LinearLayer _ (Just inputs) weights biases) errors =
 	let
 		meanInputs = map mean $ transpose inputs
-		newWeights = zipWith (\e ws -> zipWith (\w i -> w - (e * i)) ws meanInputs) errors weights
+		newWeights = zipWith (\e ws -> zipWith (\w i -> w - (e * i * alpha)) ws meanInputs) errors weights
 		newBiases = zipWith (-) biases errors
 		newErrors = map sum $ transpose $ zipWith (\e -> map (* e) ) errors weights
 	in (LinearLayer Nothing Nothing newWeights newBiases, newErrors)
-updateLayer (NonLinearLayer _ function) errors =
+updateLayer _ (NonLinearLayer _ function) errors =
 	let newErrors = map (nonLinearDerivative function) errors
 	in (NonLinearLayer Nothing function, newErrors)
-updateLayer _ _ = error "Cannot update non-activated layer"
+updateLayer _ _ _ = error "Cannot update non-activated layer"
 
-updateNextLayer :: Layer -> ([Float], [Layer]) -> ([Float], [Layer])
-updateNextLayer layer (errors, previousLayers) =
-	let (updatedLayer, newErrors) = updateLayer layer errors
+updateNextLayer :: Float -> Layer -> ([Float], [Layer]) -> ([Float], [Layer])
+updateNextLayer alpha layer (errors, previousLayers) =
+	let (updatedLayer, newErrors) = updateLayer alpha layer errors
 	in (newErrors, updatedLayer : previousLayers)
