@@ -10,6 +10,8 @@ data CostFunction = CostFunction
 	}
 instance Show CostFunction where
 	show (CostFunction name _ _) = "CostFunction: " ++ name
+instance Eq CostFunction where
+	(CostFunction name1 _ _) == (CostFunction name2 _ _) = name1 == name2
 data NonLinearFunction = NonLinearFunction
 	{ nonLinearName :: String
 	, nonLinearCalculate :: Float -> Float
