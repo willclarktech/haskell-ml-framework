@@ -30,7 +30,7 @@ data LayerSpecification =
 
 activateLayer :: [Input] -> Layer -> Layer
 activateLayer inputs (NonLinearLayer _ _ function) =
-	let activations = (map $ map $ nonLinearCalculate function) inputs
+	let activations = (deepMap $ nonLinearCalculate function) inputs
 	in NonLinearLayer (Just activations) (Just inputs) function
 activateLayer inputs (LinearLayer _ _ weights biases) =
 	let

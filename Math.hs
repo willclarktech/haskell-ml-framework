@@ -20,6 +20,9 @@ instance Show NonLinearFunction where
 instance Eq NonLinearFunction where
 	(NonLinearFunction name1 _ _) == (NonLinearFunction name2 _ _) = name1 == name2
 
+deepMap :: (a -> b) -> [[a]] -> [[b]]
+deepMap = map . map
+
 find :: Foldable t => (a -> Bool) -> t a -> Maybe a
 find condition =
 	let fn candidate result
