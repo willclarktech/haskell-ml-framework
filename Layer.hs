@@ -21,7 +21,7 @@ data Layer =
 		{ activations :: Maybe [Output]
 		, function :: NonLinearFunction
 		}
-	deriving (Show)
+	deriving (Show, Eq)
 
 data LayerSpecification =
 	LinearLayerSpecification Width

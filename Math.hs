@@ -17,6 +17,8 @@ data NonLinearFunction = NonLinearFunction
 	}
 instance Show NonLinearFunction where
 	show (NonLinearFunction name _ _) = "NonLinearFunction: " ++ name
+instance Eq NonLinearFunction where
+	(NonLinearFunction name1 _ _) == (NonLinearFunction name2 _ _) = name1 == name2
 
 find :: Foldable t => (a -> Bool) -> t a -> Maybe a
 find condition =
