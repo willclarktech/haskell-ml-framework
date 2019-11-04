@@ -1,1 +1,4 @@
 *.ignore.hs
+.DS_Store
+data/
+
