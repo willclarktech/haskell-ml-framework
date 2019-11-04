@@ -45,6 +45,9 @@ check condition name expected result = if condition expected result
 	then "Passed: " ++ name
 	else createError name expected result
 
+checkEqual :: String -> Int -> Int -> String
+checkEqual = check (==)
+
 checkApproxEqual :: String -> Float -> Float -> String
 checkApproxEqual = check approxEqual
 
