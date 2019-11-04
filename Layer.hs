@@ -75,20 +75,23 @@ updatePartialWeights alpha input err = zipWith (updateWeight alpha err) input
 updateBias :: Float -> Float -> Bias -> Bias
 updateBias alpha err bias = bias - (err * alpha)
 
+calculateMeanInput :: [Input] -> Input
+calculateMeanInput = map mean . transpose
+
 calculateNextErrors :: [[Weight]] -> [Float] -> [Float]
 calculateNextErrors weights errors = map sum $ transpose $ zipWith (\e -> map (* e) ) errors weights
 
 updateLayer :: Float -> Layer -> [Float] -> (Layer, [Float])
 updateLayer alpha (LinearLayer _ (Just inputs) weights biases) errors =
 	let
-		meanInput = map mean $ transpose inputs
+		meanInput = calculateMeanInput inputs
 		newWeights = zipWith (updatePartialWeights alpha meanInput) errors weights
 		newBiases = zipWith (updateBias alpha) errors biases
 		newErrors = calculateNextErrors weights errors
 	in (LinearLayer Nothing Nothing newWeights newBiases, newErrors)
 updateLayer _ (NonLinearLayer _ (Just inputs) function) errors =
 	let
-		meanInput = map mean $ transpose inputs
+		meanInput = calculateMeanInput inputs
 		newErrors = zipWith (\i e -> e * (nonLinearDerivative function $ i)) meanInput errors
 	in (NonLinearLayer Nothing Nothing function, newErrors)
 updateLayer _ _ _ = error "Cannot update non-activated layer"
