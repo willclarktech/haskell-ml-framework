@@ -19,6 +19,7 @@ data Layer =
 		}
 	| NonLinearLayer
 		{ activations :: Maybe [Output]
+		, inputs :: Maybe [Input]
 		, function :: NonLinearFunction
 		}
 	deriving (Show, Eq)
@@ -28,9 +29,9 @@ data LayerSpecification =
 	| NonLinearLayerSpecification String
 
 activateLayer :: [Input] -> Layer -> Layer
-activateLayer inputs (NonLinearLayer _ function) =
+activateLayer inputs (NonLinearLayer _ _ function) =
 	let activations = (map $ map $ nonLinearCalculate function) inputs
-	in NonLinearLayer (Just activations) function
+	in NonLinearLayer (Just activations) (Just inputs) function
 activateLayer inputs (LinearLayer _ _ weights biases) =
 	let
 		weightedSums = matrixMultiplication inputs weights
@@ -59,7 +60,7 @@ createLinearLayer g previousWidth width =
 	in LinearLayer Nothing Nothing (initializeWeights g1 previousWidth width) (initializeBiases g2 width)
 
 createNonLinearLayer :: String -> Layer
-createNonLinearLayer = NonLinearLayer Nothing . resolveNonLinearFunction
+createNonLinearLayer = NonLinearLayer Nothing Nothing . resolveNonLinearFunction
 
 createLayer :: StdGen -> Width -> LayerSpecification -> Layer
 createLayer g previousWidth (LinearLayerSpecification width) = createLinearLayer g previousWidth width
@@ -69,7 +70,7 @@ updateWeight :: Float -> Float -> Activation -> Weight -> Weight
 updateWeight alpha err activation weight = weight - (err * activation * alpha)
 
 updatePartialWeights :: Float -> Input -> Float -> [Weight] -> [Weight]
-updatePartialWeights alpha inputs err = zipWith (updateWeight alpha err) inputs
+updatePartialWeights alpha input err = zipWith (updateWeight alpha err) input
 
 updateBias :: Float -> Float -> Bias -> Bias
 updateBias alpha err bias = bias - (err * alpha)
@@ -85,9 +86,11 @@ updateLayer alpha (LinearLayer _ (Just inputs) weights biases) errors =
 		newBiases = zipWith (updateBias alpha) errors biases
 		newErrors = calculateNextErrors weights errors
 	in (LinearLayer Nothing Nothing newWeights newBiases, newErrors)
-updateLayer _ (NonLinearLayer _ function) errors =
-	let newErrors = map (nonLinearDerivative function) errors
-	in (NonLinearLayer Nothing function, newErrors)
+updateLayer _ (NonLinearLayer _ (Just inputs) function) errors =
+	let
+		meanInput = map mean $ transpose inputs
+		newErrors = zipWith (\i e -> e * (nonLinearDerivative function $ i)) meanInput errors
+	in (NonLinearLayer Nothing Nothing function, newErrors)
 updateLayer _ _ _ = error "Cannot update non-activated layer"
 
 updateNextLayer :: Float -> Layer -> ([Float], [Layer]) -> ([Float], [Layer])
