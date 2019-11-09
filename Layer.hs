@@ -3,23 +3,38 @@ module Layer where
 import System.Random
 import Math
 
-type Weight = Float
-type Bias = Float
 type Width = Int
+
 type Activation = Float
-type Input = [Activation]
-type Output = [Activation]
+type LayerInput = [Activation]
+type LayerOutput = [Activation]
+
+type Weight = Float
+type WeightRow = [Weight]
+type WeightMatrix = [WeightRow]
+
+type Bias = Float
+type BiasRow = [Bias]
+
+type Error = Float
+type LayerError = [Error]
+
+type Update = Float
+type RowUpdate = [Update]
+type MatrixUpdate = [RowUpdate]
+
+type Alpha = Float
 
 data Layer =
 	LinearLayer
-		{ activations :: Maybe [Output]
-		, inputs :: Maybe [Input]
-		, weights :: [[Weight]]
-		, biases :: [Bias]
+		{ activations :: Maybe [LayerOutput]
+		, inputs :: Maybe [LayerInput]
+		, weights :: WeightMatrix
+		, biases :: BiasRow
 		}
 	| NonLinearLayer
-		{ activations :: Maybe [Output]
-		, inputs :: Maybe [Input]
+		{ activations :: Maybe [LayerOutput]
+		, inputs :: Maybe [LayerInput]
 		, function :: NonLinearFunction
 		}
 	deriving (Show, Eq)
@@ -28,23 +43,13 @@ data LayerSpecification =
 	LinearLayerSpecification Width
 	| NonLinearLayerSpecification String
 
-activateLayer :: [Input] -> Layer -> Layer
-activateLayer inputs (NonLinearLayer _ _ function) =
-	let activations = (deepMap $ nonLinearCalculate function) inputs
-	in NonLinearLayer (Just activations) (Just inputs) function
-activateLayer inputs (LinearLayer _ _ weights biases) =
-	let
-		weightedSums = matrixMultiplication inputs weights
-		activations = map (zipWith (+) biases) weightedSums
-	in LinearLayer (Just activations) (Just inputs) weights biases
-
 getRandomValues :: StdGen -> [Float]
 getRandomValues = randomRs (-1.0, 1.0)
 
-initializeBiases :: StdGen -> Width -> [Bias]
+initializeBiases :: StdGen -> Width -> BiasRow
 initializeBiases g width = take width $ getRandomValues g
 
-initializeWeights :: StdGen -> Width -> Width -> [[Weight]]
+initializeWeights :: StdGen -> Width -> Width -> WeightMatrix
 initializeWeights g previousWidth width =
 	let
 		randomValues = take (previousWidth * width) $ getRandomValues g
@@ -66,37 +71,85 @@ createLayer :: StdGen -> Width -> LayerSpecification -> Layer
 createLayer g previousWidth (LinearLayerSpecification width) = createLinearLayer g previousWidth width
 createLayer _ _ (NonLinearLayerSpecification name) = createNonLinearLayer name
 
-updateWeight :: Float -> Float -> Activation -> Weight -> Weight
-updateWeight alpha err activation weight = weight - (err * activation * alpha)
-
-updatePartialWeights :: Float -> Input -> Float -> [Weight] -> [Weight]
-updatePartialWeights alpha input err = zipWith (updateWeight alpha err) input
-
-updateBias :: Float -> Float -> Bias -> Bias
-updateBias alpha err bias = bias - (err * alpha)
-
-calculateMeanInput :: [Input] -> Input
-calculateMeanInput = map mean . transpose
-
-calculateNextErrors :: [[Weight]] -> [Float] -> [Float]
-calculateNextErrors weights errors = map sum $ transpose $ zipWith (\e -> map (* e) ) errors weights
-
-updateLayer :: Float -> Layer -> [Float] -> (Layer, [Float])
-updateLayer alpha (LinearLayer _ (Just inputs) weights biases) errors =
+activateLayer :: [LayerInput] -> Layer -> Layer
+activateLayer inputs (NonLinearLayer _ _ function) =
+	let activations = (deepMap $ nonLinearCalculate function) inputs
+	in NonLinearLayer (Just activations) (Just inputs) function
+activateLayer inputs (LinearLayer _ _ weights biases) =
 	let
-		meanInput = calculateMeanInput inputs
-		newWeights = zipWith (updatePartialWeights alpha meanInput) errors weights
-		newBiases = zipWith (updateBias alpha) errors biases
-		newErrors = calculateNextErrors weights errors
+		weightedSums = matrixMultiplication inputs weights
+		activations = map (zipWith (+) biases) weightedSums
+	in LinearLayer (Just activations) (Just inputs) weights biases
+
+calculateWeightUpdateOneToOne :: Error -> Activation -> Update
+calculateWeightUpdateOneToOne = (*)
+
+calculateWeightUpdateOneToN :: Error -> LayerInput -> RowUpdate
+calculateWeightUpdateOneToN err = map (calculateWeightUpdateOneToOne err)
+
+calculateWeightUpdateNToN :: LayerError -> LayerInput -> MatrixUpdate
+calculateWeightUpdateNToN errors input =
+	let calculatePartialWeightUpdates err = calculateWeightUpdateOneToN err input
+	in map calculatePartialWeightUpdates errors
+
+combineWeightUpdates :: MatrixUpdate -> MatrixUpdate -> MatrixUpdate
+combineWeightUpdates newUpdates [] = newUpdates
+combineWeightUpdates newUpdates previousUpdates = zipWith (zipWith (+)) newUpdates previousUpdates
+
+calculateWeightUpdates :: [LayerError] -> [LayerInput] -> MatrixUpdate
+calculateWeightUpdates errors inputs =
+	let isolatedWeightUpdates = zipWith calculateWeightUpdateNToN errors inputs
+	in foldr combineWeightUpdates [] isolatedWeightUpdates
+
+updateWeight :: Alpha -> Weight -> Update -> Weight
+updateWeight alpha weight update = weight - (update * alpha)
+
+updateWeights :: Alpha -> WeightMatrix -> MatrixUpdate -> WeightMatrix
+updateWeights alpha = zipWith (zipWith (updateWeight alpha))
+
+updateBias :: Alpha -> Float -> Bias -> Bias
+updateBias alpha bias update = bias - (update * alpha)
+
+updateBiases :: Alpha -> BiasRow -> RowUpdate -> BiasRow
+updateBiases alpha = zipWith (updateBias alpha)
+
+calculateBiasUpdates :: [LayerError] -> RowUpdate
+calculateBiasUpdates = (map mean) . transpose
+
+calculateNextLinearLayerErrorOneToOne :: Error -> Weight -> Error
+calculateNextLinearLayerErrorOneToOne = (*)
+
+calculateNextLinearLayerErrorOneToN :: Error -> WeightRow -> LayerError
+calculateNextLinearLayerErrorOneToN error = map (calculateNextLinearLayerErrorOneToOne error)
+
+calculateNextLinearLayerErrorNToN :: WeightMatrix -> LayerError -> LayerError
+calculateNextLinearLayerErrorNToN weightsList errors =
+	let perNodeErrors = zipWith calculateNextLinearLayerErrorOneToN errors weightsList
+	in map sum $ transpose perNodeErrors
+
+calculateNextLinearLayerErrors :: WeightMatrix -> [LayerError] -> [LayerError]
+calculateNextLinearLayerErrors weights = map (calculateNextLinearLayerErrorNToN weights)
+
+calculateNextNonLinearLayerErrors :: [LayerError] -> [[Float]] -> [LayerError]
+calculateNextNonLinearLayerErrors = zipWith (zipWith (*))
+
+updateLayer :: Alpha -> Layer -> [LayerError] -> (Layer, [LayerError])
+updateLayer alpha (LinearLayer activations (Just inputs) weights biases) errors =
+	let
+		weightUpdates = calculateWeightUpdates errors inputs
+		newWeights = updateWeights alpha weights weightUpdates
+		biasUpdates = calculateBiasUpdates errors
+		newBiases = updateBiases alpha biases biasUpdates
+		newErrors = calculateNextLinearLayerErrors weights errors
 	in (LinearLayer Nothing Nothing newWeights newBiases, newErrors)
-updateLayer _ (NonLinearLayer _ (Just inputs) function) errors =
+updateLayer _ (NonLinearLayer (Just activations) (Just inputs) function) errors =
 	let
-		meanInput = calculateMeanInput inputs
-		newErrors = zipWith (\i e -> e * (nonLinearDerivative function $ i)) meanInput errors
+		inputDerivatives = deepMap (nonLinearDerivative function) activations
+		newErrors = calculateNextNonLinearLayerErrors errors inputDerivatives
 	in (NonLinearLayer Nothing Nothing function, newErrors)
 updateLayer _ _ _ = error "Cannot update non-activated layer"
 
-updateNextLayer :: Float -> Layer -> ([Float], [Layer]) -> ([Float], [Layer])
+updateNextLayer :: Alpha -> Layer -> ([LayerError], [Layer]) -> ([LayerError], [Layer])
 updateNextLayer alpha layer (errors, previousLayers) =
 	let (updatedLayer, newErrors) = updateLayer alpha layer errors
 	in (newErrors, updatedLayer : previousLayers)
