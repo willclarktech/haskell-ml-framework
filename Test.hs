@@ -4,7 +4,7 @@ import Layer
 import Network
 
 approxEqual :: Float -> Float -> Bool
-approxEqual m n = abs (m - n) < 0.000001
+approxEqual m n = abs (m - n) < 0.001
 
 allApproxEqual :: [Float] -> [Float] -> Bool
 allApproxEqual ms ns
