@@ -1,4 +1,7 @@
-*.ignore.hs
 .DS_Store
-data/
 
+data/
+build/
+bin/
+
+*.ignore.hs
