@@ -42,8 +42,8 @@ sigmoid =
 relu :: NonLinearFunction
 relu =
 	let
-		calculate n = if n > 0 then n else 0
-		derivative n = if n > 0 then 1 else 0
+		calculate = max 0
+		derivative = fromIntegral . fromEnum . (> 0)
 	in NonLinearFunction "relu" calculate derivative
 
 nonLinearFunctions :: [NonLinearFunction]
