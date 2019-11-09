@@ -76,14 +76,13 @@ testForwardPropagate =
 
 		costFunction = meanSquaredError
 		alpha = 0.1
-		miniBatchSize = 8
 		weights = [[0.9, -0.1, -0.8], [0.2, 0.5, 0.6]]
 		biases = [-0.1, -0.7]
 		layers =
 			[ LinearLayer Nothing Nothing weights biases
 			, NonLinearLayer Nothing Nothing relu
 			]
-		network = Network costFunction alpha miniBatchSize layers
+		network = Network costFunction alpha layers
 		inputs = [[0.8, 0.5, -0.2]]
 		result = forwardPropagate network inputs
 
@@ -91,7 +90,7 @@ testForwardPropagate =
 			[ LinearLayer (Just [[0.73, -0.41]]) (Just inputs) weights biases
 			, NonLinearLayer (Just [[0.73, 0]]) (Just [[0.73, -0.41]]) relu
 			]
-		expected = Network costFunction alpha miniBatchSize expectedLayers
+		expected = Network costFunction alpha expectedLayers
 	in checkNetworkApproxEqual testName expected result
 
 testCalculateNetworkError :: String
@@ -99,7 +98,7 @@ testCalculateNetworkError =
 	let
 		testName = "calculateNetworkError"
 
-		network = Network meanSquaredError 0 0 []
+		network = Network meanSquaredError 0 []
 		actualExpectedPairs = [([0.73, 0], [0, 1])]
 		result = calculateNetworkError network actualExpectedPairs
 
@@ -113,7 +112,6 @@ testBackPropagate =
 
 		costFunction = meanSquaredError
 		alpha = 0.1
-		miniBatchSize = 8
 		linearActivations = Just [[0.73, -0.41]]
 		linearInputs = Just [[0.8, 0.5, -0.2]]
 		weights = [[0.9, -0.1, -0.8], [0.2, 0.5, 0.6]]
@@ -123,7 +121,7 @@ testBackPropagate =
 			[ LinearLayer linearActivations linearInputs weights biases
 			, NonLinearLayer nonLinearActivations linearActivations relu
 			]
-		network = Network costFunction alpha miniBatchSize layers
+		network = Network costFunction alpha layers
 		actualExpectedPairs = [([0.73, 0], [0, 1])]
 		result = backPropagate network actualExpectedPairs
 
@@ -133,7 +131,7 @@ testBackPropagate =
 			[ LinearLayer Nothing Nothing expectedWeights expectedBiases
 			, NonLinearLayer Nothing Nothing relu
 			]
-		expected = Network costFunction alpha miniBatchSize expectedLayers
+		expected = Network costFunction alpha expectedLayers
 	in checkNetworkApproxEqual testName expected result
 
 testModuleNetwork =

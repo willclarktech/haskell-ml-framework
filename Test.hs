@@ -39,10 +39,9 @@ layersApproxEqual layer1 layer2
 	| otherwise = False
 
 networkApproxEqual :: Network -> Network -> Bool
-networkApproxEqual (Network costFunction1 alpha1 miniBatchSize1 layers1) (Network costFunction2 alpha2 miniBatchSize2 layers2) =
+networkApproxEqual (Network costFunction1 alpha1 layers1) (Network costFunction2 alpha2 layers2) =
 	costFunction1 == costFunction2
 	&& alpha1 == alpha2
-	&& miniBatchSize1 == miniBatchSize2
 	&& layersApproxEqual layers1 layers2
 
 createError :: (Show a) => String -> a -> a -> b

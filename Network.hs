@@ -4,12 +4,11 @@ import System.Random
 import Layer
 import Math
 
-type MiniBatch = ([Input], [Output])
+type NetworkError = Float
 
 data Network = Network
 	{ costFunction :: CostFunction
-	, alpha :: Float
-	, miniBatchSize :: Int
+	, alpha :: Alpha
 	, layers :: [Layer]
 	}
 	deriving (Show)
@@ -29,51 +28,50 @@ appendLayer inputWidth (g, layers) specification =
 		newG = snd $ next g
 	in (newG, layers ++ [newLayer])
 
-createNetwork :: StdGen -> Float -> Int -> Width -> [LayerSpecification] -> Network
-createNetwork g alpha miniBatchSize inputWidth layerSpecifications =
+createNetwork :: StdGen -> Alpha -> Width -> [LayerSpecification] -> Network
+createNetwork g alpha inputWidth layerSpecifications =
 	let (_, layers) = foldl (appendLayer inputWidth) (g, []) layerSpecifications
-	in Network meanSquaredError alpha miniBatchSize layers
+	in Network meanSquaredError alpha layers
 
-getFinalActivations :: [Layer] -> [Output]
+getFinalActivations :: [Layer] -> [LayerOutput]
 getFinalActivations [] = error "No layers"
 getFinalActivations layers = case activations $ last layers of
 	Nothing -> error "Final layer not activated"
 	Just a -> a
 
-getOutputs :: Network -> [Output]
+getOutputs :: Network -> [LayerOutput]
 getOutputs = getFinalActivations . layers
 
-activateLayers :: [Input] -> [Layer] -> Layer -> [Layer]
+activateLayers :: [LayerInput] -> [Layer] -> Layer -> [Layer]
 activateLayers networkInputs ls layer =
 	let layerInputs = if length ls == 0 then networkInputs else getFinalActivations ls
 	in ls ++ [activateLayer layerInputs layer]
 
-forwardPropagate :: Network -> [Input] -> Network
-forwardPropagate (Network costFunction alpha miniBatchSize layers) inputs =
-	let activatedLayers = foldl (activateLayers inputs) [] $ layers
-	in Network costFunction alpha miniBatchSize activatedLayers
+forwardPropagate :: Network -> [LayerInput] -> Network
+forwardPropagate (Network costFunction alpha layers) inputs =
+	let activatedLayers = foldl (activateLayers inputs) [] layers
+	in Network costFunction alpha activatedLayers
 
-calculateNetworkError :: Network -> [(Output, Output)] -> Float
-calculateNetworkError (Network costFunction _ _ _) = mean . (map (costFunctionCalculate costFunction))
+calculateNetworkError :: Network -> [(LayerOutput, LayerOutput)] -> NetworkError
+calculateNetworkError (Network costFunction _ _) = mean . (map (costFunctionCalculate costFunction))
 
-backPropagate :: Network -> [(Output, Output)] -> Network
-backPropagate (Network costFunction alpha miniBatchSize layers) actualExpectedPairs =
+backPropagate :: Network -> [(LayerOutput, LayerOutput)] -> Network
+backPropagate (Network costFunction alpha layers) actualExpectedPairs =
 	let
 		errs = map (costFunctionDerivative costFunction) actualExpectedPairs
-		averagedErrs = map mean $ transpose errs
-		newLayers = snd $ foldr (updateNextLayer alpha) (averagedErrs, []) layers
-	in Network costFunction alpha miniBatchSize newLayers
+		newLayers = snd $ foldr (updateNextLayer alpha) (errs, []) layers
+	in Network costFunction alpha newLayers
 
-divideInputsIntoMiniBatches :: Int -> [Input] -> [Output] -> [MiniBatch]
-divideInputsIntoMiniBatches size [] _ = []
-divideInputsIntoMiniBatches size _ [] = []
-divideInputsIntoMiniBatches size inputs outputs =
-	let
-		(miniBatchInputs, remainingInputs) = splitAt size inputs
-		(miniBatchOutputs, remainingOutputs) = splitAt size outputs
-	in (miniBatchInputs, miniBatchOutputs) : divideInputsIntoMiniBatches size remainingInputs remainingOutputs
+-- divideInputsIntoMiniBatches :: Int -> [LayerInput] -> [LayerOutput] -> [MiniBatch]
+-- divideInputsIntoMiniBatches size [] _ = []
+-- divideInputsIntoMiniBatches size _ [] = []
+-- divideInputsIntoMiniBatches size inputs outputs =
+-- 	let
+-- 		(miniBatchInputs, remainingInputs) = splitAt size inputs
+-- 		(miniBatchOutputs, remainingOutputs) = splitAt size outputs
+-- 	in (miniBatchInputs, miniBatchOutputs) : divideInputsIntoMiniBatches size remainingInputs remainingOutputs
 
-runIteration :: Network -> [Input] -> [Output] -> (Network, Float)
+runIteration :: Network -> [LayerInput] -> [LayerOutput] -> (Network, NetworkError)
 runIteration network inputs expectedOutputs =
 	let
 		activatedNetwork = forwardPropagate network inputs
@@ -83,26 +81,24 @@ runIteration network inputs expectedOutputs =
 		trained = backPropagate activatedNetwork actualExpectedPairs
 	in (trained, err)
 
-runMiniBatch :: MiniBatch -> (Network, Float) -> (Network, Float)
-runMiniBatch (inputs, expectedOutputs) (network, _) = runIteration network inputs expectedOutputs
+-- runMiniBatch :: MiniBatch -> (Network, NetworkError) -> (Network, NetworkError)
+-- runMiniBatch (inputs, expectedOutputs) (network, _) = runIteration network inputs expectedOutputs
 
-runIterationWithMiniBatches :: Network -> [MiniBatch] -> (Network, Float)
-runIterationWithMiniBatches network = foldr runMiniBatch (network, 0.0)
+-- runIterationWithMiniBatches :: Network -> [MiniBatch] -> (Network, NetworkError)
+-- runIterationWithMiniBatches network = foldr runMiniBatch (network, 0.0)
 
-run :: Int -> Network -> [Input] -> [Output] -> (Network, Float)
-run n _ _ _
+run :: [LayerInput] -> [LayerOutput] -> Network -> Int -> (Network, NetworkError)
+run _ _ _ n
 	| n < 0 = error "Iterations cannot be negative"
-run 0 network inputs expectedOutputs =
+run inputs expectedOutputs network 0 =
 	let
 		activatedNetwork = forwardPropagate network inputs
 		outputs = getOutputs activatedNetwork
 		actualExpectedPairs = zip outputs expectedOutputs
 		err = calculateNetworkError activatedNetwork actualExpectedPairs
 	in (activatedNetwork, err)
-run n network inputs expectedOutputs =
-	let
-		miniBatches = divideInputsIntoMiniBatches (miniBatchSize network) inputs expectedOutputs
-		(trained, err) = runIterationWithMiniBatches network miniBatches
+run inputs expectedOutputs network n =
+	let (trained, err) = runIteration network inputs expectedOutputs
 	in case n of
 		1 -> (trained, err)
-		_ -> run (n - 1) trained inputs expectedOutputs
+		_ -> run inputs expectedOutputs trained (n - 1)
