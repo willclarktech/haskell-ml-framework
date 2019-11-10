@@ -114,7 +114,7 @@ updateBiases :: Alpha -> BiasRow -> RowUpdate -> BiasRow
 updateBiases alpha = zipWith (updateBias alpha)
 
 calculateBiasUpdates :: [LayerError] -> RowUpdate
-calculateBiasUpdates = (map mean) . transpose
+calculateBiasUpdates = (map mean) . transpose'
 
 calculateNextLinearLayerErrorOneToOne :: Error -> Weight -> Error
 calculateNextLinearLayerErrorOneToOne = (*)
@@ -125,7 +125,7 @@ calculateNextLinearLayerErrorOneToN error = map (calculateNextLinearLayerErrorOn
 calculateNextLinearLayerErrorNToN :: WeightMatrix -> LayerError -> LayerError
 calculateNextLinearLayerErrorNToN weightsList errors =
 	let perNodeErrors = zipWith calculateNextLinearLayerErrorOneToN errors weightsList
-	in map sum $ transpose perNodeErrors
+	in map sum $ transpose' perNodeErrors
 
 calculateNextLinearLayerErrors :: WeightMatrix -> [LayerError] -> [LayerError]
 calculateNextLinearLayerErrors weights = map (calculateNextLinearLayerErrorNToN weights)

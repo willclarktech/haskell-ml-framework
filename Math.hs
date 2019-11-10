@@ -25,12 +25,12 @@ instance Eq NonLinearFunction where
 deepMap :: (a -> b) -> [[a]] -> [[b]]
 deepMap = map . map
 
-find :: Foldable t => (a -> Bool) -> t a -> Maybe a
-find condition =
-	let fn candidate result
-		| condition candidate = Just candidate
-		| otherwise = result
-	in foldr fn Nothing
+find' :: (a -> Bool) -> [a] -> Maybe a
+find' _ [] = Nothing
+find' condition (candidate:candidates) =
+	if condition candidate
+		then Just candidate
+		else find' condition candidates
 
 sigmoid :: NonLinearFunction
 sigmoid =
@@ -51,15 +51,15 @@ nonLinearFunctions = [sigmoid, relu]
 
 resolveNonLinearFunction :: String -> NonLinearFunction
 resolveNonLinearFunction requestedName =
-	let result = find ((requestedName ==) . nonLinearName) nonLinearFunctions
+	let result = find' ((requestedName ==) . nonLinearName) nonLinearFunctions
 	in case result of
 		Just nonLinearFunction -> nonLinearFunction
 		Nothing -> error "Non-linear function not found"
 
-transpose :: Matrix -> Matrix
-transpose [] = []
-transpose ([]:_) = []
-transpose matrix = (map head matrix) : (transpose $ map tail matrix)
+transpose' :: Matrix -> Matrix
+transpose' [] = []
+transpose' ([]:_) = []
+transpose' matrix = (map head matrix) : (transpose' $ map tail matrix)
 
 weightedSum :: [Float] -> [Float] -> Float
 weightedSum input = sum . (zipWith (*) input)
