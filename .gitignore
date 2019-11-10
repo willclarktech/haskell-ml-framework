@@ -3,5 +3,6 @@
 data/
 build/
 bin/
+networks/
 
 *.ignore.hs
