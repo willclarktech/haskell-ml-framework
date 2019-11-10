@@ -13,7 +13,7 @@ data Network = Network
 	, alpha :: Alpha
 	, layers :: [Layer]
 	}
-	deriving (Show)
+	deriving (Read, Show)
 
 getOutputWidth :: Width -> [Layer] -> Width
 getOutputWidth inputWidth [] = inputWidth

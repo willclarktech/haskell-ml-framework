@@ -1,24 +1,59 @@
 module Math where
 
+import Data.List
+
 type Vector = [Float]
 type Matrix = [[Float]]
+
+costFunctionShowPrefix :: String
+costFunctionShowPrefix = "CostFunction: <"
+
+costFunctionShowSuffix :: Char
+costFunctionShowSuffix = '>'
 
 data CostFunction = CostFunction
 	{ costFunctionName :: String
 	, costFunctionCalculate :: ([Float], [Float]) -> Float
 	, costFunctionDerivative :: ([Float], [Float]) -> [Float]
 	}
+
 instance Show CostFunction where
-	show (CostFunction name _ _) = "CostFunction: " ++ name
+	show (CostFunction name _ _) = costFunctionShowPrefix ++ name ++ [costFunctionShowSuffix]
+
+instance Read CostFunction where
+	readsPrec p (' ':str) = readsPrec p str
+	readsPrec _ str = case stripPrefix costFunctionShowPrefix str of
+		Just body ->
+			let (name, rest) = span (/= costFunctionShowSuffix) body
+			in [(resolveCostFunction name, tail rest)]
+		Nothing -> error "String does not represent a CostFunction"
+
 instance Eq CostFunction where
 	(CostFunction name1 _ _) == (CostFunction name2 _ _) = name1 == name2
+
+nonLinearFunctionShowPrefix :: String
+nonLinearFunctionShowPrefix = "NonLinearFunction: <"
+
+nonLinearFunctionShowSuffix :: Char
+nonLinearFunctionShowSuffix = '>'
+
 data NonLinearFunction = NonLinearFunction
 	{ nonLinearName :: String
 	, nonLinearCalculate :: Float -> Float
 	, nonLinearDerivative :: Float -> Float
 	}
+
 instance Show NonLinearFunction where
-	show (NonLinearFunction name _ _) = "NonLinearFunction: " ++ name
+	show (NonLinearFunction name _ _) = nonLinearFunctionShowPrefix ++ name ++ [nonLinearFunctionShowSuffix]
+
+instance Read NonLinearFunction where
+	readsPrec p (' ':str) = readsPrec p str
+	readsPrec _ str = case stripPrefix nonLinearFunctionShowPrefix str of
+		Just body ->
+			let (name, rest) = span (/= nonLinearFunctionShowSuffix) body
+			in [(resolveNonLinearFunction name, tail rest)]
+		Nothing -> error "String does not represent a NonLinearFunction"
+
 instance Eq NonLinearFunction where
 	(NonLinearFunction name1 _ _) == (NonLinearFunction name2 _ _) = name1 == name2
 
@@ -85,3 +120,13 @@ meanSquaredError =
 		calculate = mean . (uncurry (zipWith squaredError))
 		derivative = uncurry (zipWith squaredErrorDerivative)
 	in CostFunction "MSE" calculate derivative
+
+costFunctions :: [CostFunction]
+costFunctions = [meanSquaredError]
+
+resolveCostFunction :: String -> CostFunction
+resolveCostFunction requestedName =
+	let result = find' ((requestedName ==) . costFunctionName) costFunctions
+	in case result of
+		Just costFunction -> costFunction
+		Nothing -> error "Cost function not found"

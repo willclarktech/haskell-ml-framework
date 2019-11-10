@@ -37,7 +37,7 @@ data Layer =
 		, inputs :: Maybe [LayerInput]
 		, function :: NonLinearFunction
 		}
-	deriving (Show, Eq)
+	deriving (Eq, Read, Show)
 
 data LayerSpecification =
 	LinearLayerSpecification Width
