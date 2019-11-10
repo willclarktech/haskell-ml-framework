@@ -107,3 +107,12 @@ run logCycleSize inputs expectedOutputs network n =
 	in if shouldLogError && trace ("Iteration: -" ++ show n ++ "; Error: " ++ show err) False then (trained, err) else case n of
 		1 -> (trained, err)
 		_ -> run logCycleSize inputs expectedOutputs trained (n - 1)
+
+writeNetworkToFile :: FilePath -> Network -> IO ()
+writeNetworkToFile filePath = (writeFile filePath) . show
+
+readNetworkFromFile :: FilePath -> IO Network
+readNetworkFromFile filePath = do
+	contents <- readFile filePath
+	let network = read contents :: Network
+	return network
