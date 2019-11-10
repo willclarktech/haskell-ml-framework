@@ -1,6 +1,8 @@
 module Network where
 
+import Debug.Trace
 import System.Random
+
 import Layer
 import Math
 
@@ -87,18 +89,21 @@ runIteration network inputs expectedOutputs =
 -- runIterationWithMiniBatches :: Network -> [MiniBatch] -> (Network, NetworkError)
 -- runIterationWithMiniBatches network = foldr runMiniBatch (network, 0.0)
 
-run :: [LayerInput] -> [LayerOutput] -> Network -> Int -> (Network, NetworkError)
-run _ _ _ n
+run :: Int -> [LayerInput] -> [LayerOutput] -> Network -> Int -> (Network, NetworkError)
+run logCycleSize _ _ _ n
 	| n < 0 = error "Iterations cannot be negative"
-run inputs expectedOutputs network 0 =
+	| logCycleSize < 0 = error "Log cycle size cannot be negative"
+run logCycleSize inputs expectedOutputs network 0 =
 	let
 		activatedNetwork = forwardPropagate network inputs
 		outputs = getOutputs activatedNetwork
 		actualExpectedPairs = zip outputs expectedOutputs
 		err = calculateNetworkError activatedNetwork actualExpectedPairs
 	in (activatedNetwork, err)
-run inputs expectedOutputs network n =
-	let (trained, err) = runIteration network inputs expectedOutputs
-	in case n of
+run logCycleSize inputs expectedOutputs network n =
+	let
+		shouldLogError = if logCycleSize == 0 then False else 0 == mod n logCycleSize
+		(trained, err) = runIteration network inputs expectedOutputs
+	in if shouldLogError && trace ("Iteration: -" ++ show n ++ "; Error: " ++ show err) False then (trained, err) else case n of
 		1 -> (trained, err)
-		_ -> run inputs expectedOutputs trained (n - 1)
+		_ -> run logCycleSize inputs expectedOutputs trained (n - 1)

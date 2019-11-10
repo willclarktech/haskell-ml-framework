@@ -5,6 +5,7 @@ import Network
 import Test
 
 g = mkStdGen 1337
+logCycleSize = 0
 
 testSimpleLinearNetwork :: String
 testSimpleLinearNetwork =
@@ -18,7 +19,7 @@ testSimpleLinearNetwork =
 		inputWidth = 1
 		specs = [LinearLayerSpecification 1]
 		network = createNetwork g alphaValue inputWidth specs
-		(trainedNetwork, resultErr) = run is os network 200
+		(trainedNetwork, resultErr) = run logCycleSize is os network 200
 		trainedLayer = head $ layers trainedNetwork
 		resultWeights = weights trainedLayer
 		resultBiases = biases trainedLayer
@@ -42,7 +43,7 @@ testLinearNetworkNOutputs =
 		inputWidth = 1
 		specs = [LinearLayerSpecification 2]
 		network = createNetwork g alphaValue inputWidth specs
-		(trainedNetwork, resultErr) = run is os network 250
+		(trainedNetwork, resultErr) = run logCycleSize is os network 250
 		trainedLayer = head $ layers trainedNetwork
 		resultWeights = weights trainedLayer
 		resultBiases = biases trainedLayer
@@ -66,7 +67,7 @@ testLinearNetworkNInputs =
 		inputWidth = 2
 		specs = [LinearLayerSpecification 1]
 		network = createNetwork g alphaValue inputWidth specs
-		(trainedNetwork, resultErr) = run is os network 800
+		(trainedNetwork, resultErr) = run logCycleSize is os network 800
 		trainedLayer = head $ layers trainedNetwork
 		resultWeights = weights trainedLayer
 		resultBiases = biases trainedLayer
@@ -90,7 +91,7 @@ testLinearNetworkNInputsNOutputs =
 		inputWidth = 2
 		specs = [LinearLayerSpecification 2]
 		network = createNetwork g alphaValue inputWidth specs
-		(trainedNetwork, resultErr) = run is os network 750
+		(trainedNetwork, resultErr) = run logCycleSize is os network 750
 		trainedLayer = head $ layers trainedNetwork
 		resultWeights = weights trainedLayer
 		resultBiases = biases trainedLayer
@@ -116,7 +117,7 @@ testLinearNetworkNLayers =
 		inputWidth = 1
 		specs = [LinearLayerSpecification 1, LinearLayerSpecification 1]
 		network = createNetwork g alphaValue inputWidth specs
-		(trainedNetwork, resultErr) = run is os network 250
+		(trainedNetwork, resultErr) = run logCycleSize is os network 250
 		trainedLayer = head $ layers trainedNetwork
 
 		expectedErr = 0
@@ -137,7 +138,7 @@ testSimpleReluNetwork =
 		inputWidth = 1
 		specs = [LinearLayerSpecification 1, NonLinearLayerSpecification "relu"]
 		network = createNetwork gPositive alphaValue inputWidth specs
-		(trainedNetwork, resultErr) = run is os network 2000
+		(trainedNetwork, resultErr) = run logCycleSize is os network 2000
 		trainedLayer = head $ layers trainedNetwork
 		resultWeights = weights trainedLayer
 		resultBiases = biases trainedLayer
@@ -161,7 +162,7 @@ testSimpleSigmoidNetwork =
 		inputWidth = 1
 		specs = [LinearLayerSpecification 1, NonLinearLayerSpecification "sigmoid"]
 		network = createNetwork g alphaValue inputWidth specs
-		(trainedNetwork, resultErr) = run is os network 1000
+		(trainedNetwork, resultErr) = run logCycleSize is os network 1000
 		trainedLayer = head $ layers trainedNetwork
 		resultWeights = weights trainedLayer
 		resultBiases = biases trainedLayer
@@ -189,7 +190,7 @@ testLogicalAnd =
 			, NonLinearLayerSpecification "sigmoid"
 			]
 		network = createNetwork g alphaValue inputWidth specs
-		(trainedNetwork, resultErr) = run is os network 10000
+		(trainedNetwork, resultErr) = run logCycleSize is os network 10000
 		trainedLayer = head $ layers trainedNetwork
 		resultWeights = weights trainedLayer
 		resultBiases = biases trainedLayer
@@ -214,7 +215,7 @@ testLogicalThreeWayXor =
 			, NonLinearLayerSpecification "sigmoid"
 			]
 		network = createNetwork g alphaValue inputWidth specs
-		(trainedNetwork, resultErr) = run is os network 10000
+		(trainedNetwork, resultErr) = run logCycleSize is os network 10000
 		trainedLayer = head $ layers trainedNetwork
 		resultWeights = weights trainedLayer
 		resultBiases = biases trainedLayer
@@ -239,7 +240,7 @@ testLogicalThreeWayXorAndOr =
 			, NonLinearLayerSpecification "sigmoid"
 			]
 		network = createNetwork g alphaValue inputWidth specs
-		(trainedNetwork, resultErr) = run is os network 10000
+		(trainedNetwork, resultErr) = run logCycleSize is os network 10000
 		trainedLayer = head $ layers trainedNetwork
 		resultWeights = weights trainedLayer
 		resultBiases = biases trainedLayer
