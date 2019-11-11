@@ -208,7 +208,7 @@ testLogicalAnd =
 		inputWidth = 2
 		specs =
 			[ LinearLayerSpecification 4
-			, NonLinearLayerSpecification "sigmoid"
+			, NonLinearLayerSpecification "tanh"
 			, LinearLayerSpecification 1
 			, NonLinearLayerSpecification "sigmoid"
 			]
@@ -233,7 +233,7 @@ testLogicalThreeWayXor =
 		inputWidth = 3
 		specs =
 			[ LinearLayerSpecification 4
-			, NonLinearLayerSpecification "sigmoid"
+			, NonLinearLayerSpecification "tanh"
 			, LinearLayerSpecification 1
 			, NonLinearLayerSpecification "sigmoid"
 			]
