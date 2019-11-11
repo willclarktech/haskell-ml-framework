@@ -116,8 +116,15 @@ sigmoid =
 		derivative n = n * (1 - n)
 	in NonLinearFunction "sigmoid" calculate derivative
 
+tanh' :: NonLinearFunction
+tanh' =
+	let
+		calculate = tanh
+		derivative = (1 -) . (**2)
+	in NonLinearFunction "tanh" calculate derivative
+
 nonLinearFunctions :: [NonLinearFunction]
-nonLinearFunctions = [relu, sigmoid]
+nonLinearFunctions = [relu, sigmoid, tanh']
 
 resolveNonLinearFunction :: String -> NonLinearFunction
 resolveNonLinearFunction requestedName =
