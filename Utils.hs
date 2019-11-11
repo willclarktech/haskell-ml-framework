@@ -22,14 +22,18 @@ processMnistTrainData = map (splitAt 1)
 -- Converts MNIST numerical value to one-hot array
 processMnistOutput :: [Float] -> [Float]
 processMnistOutput (n:[]) =
-	let r = round n
-	in (replicate r 0) ++ [1] ++ (replicate (9 - r) 0)
+	let
+		r = round n
+		prefix = replicate r 0
+		suffix = replicate (9 - r) 0
+	in prefix ++ (1:suffix)
 processMnistOutput _ = error "Unrecognised output format"
 
 processMnistTrainDataFile :: String -> ([[Float]], [[Float]])
 processMnistTrainDataFile file =
 	let
 		trainData = processMnistTrainData $ processCsv file
-		inputs = map snd trainData
-		outputs = map fst trainData
+		(rawOutputs, inputs) = unzip trainData
+		outputs = map (processMnistOutput . fst) trainData
+		-- outputs = map (map (\o -> if o == 5.0 then 1.0 else 0.0)) rawOutputs
 	in (inputs, outputs)
