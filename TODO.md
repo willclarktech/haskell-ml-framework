@@ -6,7 +6,6 @@
 
 ## Features
 
-- tanh NonLinearLayer/Function (negative correlation for hidden layers)
 - softmax (NormalizationLayer/Function)
 - CombinedLayer: Linear + NonLinear
 - Add minibatches back in
