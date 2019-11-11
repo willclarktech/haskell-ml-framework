@@ -173,6 +173,29 @@ testSimpleSigmoidNetwork =
 	in checkApproxEqual (testName ++ " (err)") expectedErr resultErr
 		++ "; " ++ checkAllApproxEqual (testName ++ " (biases)") expectedBiases resultBiases
 
+testSimpleTanhNetwork :: String
+testSimpleTanhNetwork =
+	let
+		-- f(x) = max(0, 5x + 4)
+		testName = "simpleTanhNetwork"
+
+		is = [[-3], [-2], [-1], [0], [1], [2], [3]] :: [LayerInput]
+		os = [[-1], [-1], [-1], [0], [1], [1], [1]] :: [LayerInput]
+		alphaValue = 0.4
+		inputWidth = 1
+		specs = [LinearLayerSpecification 1, NonLinearLayerSpecification "tanh"]
+		network = createNetwork g alphaValue inputWidth specs
+		(trainedNetwork, resultErr) = run logCycleSize is os network 1000
+		trainedLayer = head $ layers trainedNetwork
+		resultWeights = weights trainedLayer
+		resultBiases = biases trainedLayer
+
+		expectedErr = 0
+		-- Any positive weight will approximate the desired function, so we can't check the value
+		expectedBiases = [0]
+	in checkApproxEqual (testName ++ " (err)") expectedErr resultErr
+		++ "; " ++ checkAllApproxEqual (testName ++ " (biases)") expectedBiases resultBiases
+
 testLogicalAnd :: String
 testLogicalAnd =
 	let
@@ -257,6 +280,7 @@ testE2eNetwork =
 	, testLinearNetworkNLayers
 	, testSimpleReluNetwork
 	, testSimpleSigmoidNetwork
+	, testSimpleTanhNetwork
 	, testLogicalAnd
 	, testLogicalThreeWayXor
 	, testLogicalThreeWayXorAndOr
