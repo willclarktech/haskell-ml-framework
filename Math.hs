@@ -5,6 +5,9 @@ import Data.List
 type Vector = [Float]
 type Matrix = [[Float]]
 
+numberline :: [Int]
+numberline = [1..]
+
 deepMap :: (a -> b) -> [[a]] -> [[b]]
 deepMap = map . map
 
@@ -132,3 +135,61 @@ resolveNonLinearFunction requestedName =
 	in case result of
 		Just nonLinearFunction -> nonLinearFunction
 		Nothing -> error "Non-linear function not found"
+
+
+normalizationFunctionShowPrefix :: String
+normalizationFunctionShowPrefix = "NonLinearFunction: <"
+
+normalizationFunctionShowSuffix :: Char
+normalizationFunctionShowSuffix = '>'
+
+data NormalizationFunction = NormalizationFunction
+	{ normalizationName :: String
+	, normalizationCalculate :: [Float] -> [Float]
+	, normalizationDerivative :: [Float] -> [[Float]]
+	}
+
+instance Show NormalizationFunction where
+	show (NormalizationFunction name _ _) = normalizationFunctionShowPrefix ++ name ++ [normalizationFunctionShowSuffix]
+
+instance Read NormalizationFunction where
+	readsPrec p (' ':str) = readsPrec p str
+	readsPrec _ str = case stripPrefix normalizationFunctionShowPrefix str of
+		Just body ->
+			let (name, rest) = span (/= normalizationFunctionShowSuffix) body
+			in [(resolveNormalizationFunction name, tail rest)]
+		Nothing -> error "String does not represent a NormalizationFunction"
+
+instance Eq NormalizationFunction where
+	(NormalizationFunction name1 _ _) == (NormalizationFunction name2 _ _) = name1 == name2
+
+calculateSoftmaxCellDerivative :: Int -> Float -> Int -> Float -> Float
+calculateSoftmaxCellDerivative k outputK i outputI =
+	let kroneckerDelta = if k == i then 1 else 0
+	in outputI * (kroneckerDelta - outputK)
+
+calculateSoftmaxRowDerivative :: [Int] -> [Float] -> Int -> Float -> [Float]
+calculateSoftmaxRowDerivative numberline outputs k outputK = zipWith (calculateSoftmaxCellDerivative k outputK) numberline outputs
+
+softmax :: NormalizationFunction
+softmax =
+	let
+		calculate ns =
+			let
+				-- Offset prevents out-of-range errors
+				offset = foldr max (head ns) (tail ns)
+				exponents = map (exp . (\n -> n - offset)) ns
+				total = sum exponents
+			in map (/ total) exponents
+		derivative outputs = zipWith (calculateSoftmaxRowDerivative numberline outputs) numberline outputs
+	in NormalizationFunction "softmax" calculate derivative
+
+normalizationFunctions :: [NormalizationFunction]
+normalizationFunctions = [softmax]
+
+resolveNormalizationFunction :: String -> NormalizationFunction
+resolveNormalizationFunction requestedName =
+	let result = find ((requestedName ==) . normalizationName) normalizationFunctions
+	in case result of
+		Just normalizationFunction -> normalizationFunction
+		Nothing -> error "Normalization function not found"
