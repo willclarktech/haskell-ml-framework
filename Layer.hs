@@ -37,13 +37,19 @@ data Layer =
 	| NonLinearLayer
 		{ activations :: Maybe [LayerOutput]
 		, inputs :: Maybe [LayerInput]
-		, function :: NonLinearFunction
+		, nonLinearFunction :: NonLinearFunction
+		}
+	| NormalizationLayer
+		{ activations :: Maybe [LayerOutput]
+		, inputs :: Maybe [LayerInput]
+		, normalizationFunction :: NormalizationFunction
 		}
 	deriving (Eq, Read, Show)
 
 data LayerSpecification =
 	LinearLayerSpecification Width
 	| NonLinearLayerSpecification String
+	| NormalizationLayerSpecification String
 
 getRandomValues :: StdGen -> [Float]
 getRandomValues = randomRs (-1.0, 1.0)
@@ -69,19 +75,26 @@ createLinearLayer g previousWidth width =
 createNonLinearLayer :: String -> Layer
 createNonLinearLayer = NonLinearLayer Nothing Nothing . resolveNonLinearFunction
 
+createNormalizationLayer :: String -> Layer
+createNormalizationLayer = NormalizationLayer Nothing Nothing . resolveNormalizationFunction
+
 createLayer :: StdGen -> Width -> LayerSpecification -> Layer
 createLayer g previousWidth (LinearLayerSpecification width) = createLinearLayer g previousWidth width
 createLayer _ _ (NonLinearLayerSpecification name) = createNonLinearLayer name
+createLayer _ _ (NormalizationLayerSpecification name) = createNormalizationLayer name
 
 activateLayer :: [LayerInput] -> Layer -> Layer
-activateLayer inputs (NonLinearLayer _ _ function) =
-	let activations = (deepMap $ nonLinearCalculate function) inputs
-	in NonLinearLayer (Just activations) (Just inputs) function
 activateLayer inputs (LinearLayer _ _ weights biases) =
 	let
 		weightedSums = matrixMultiplication inputs weights
 		activations = map (zipWith (+) biases) weightedSums
 	in LinearLayer (Just activations) (Just inputs) weights biases
+activateLayer inputs (NonLinearLayer _ _ function) =
+	let activations = (deepMap $ nonLinearCalculate function) inputs
+	in NonLinearLayer (Just activations) (Just inputs) function
+activateLayer inputs (NormalizationLayer _ _ function) =
+	let activations = (map $ normalizationCalculate function) inputs
+	in NormalizationLayer (Just activations) (Just inputs) function
 
 calculateWeightUpdateOneToOne :: Error -> Activation -> Update
 calculateWeightUpdateOneToOne = (*)
@@ -135,6 +148,9 @@ calculateNextLinearLayerErrors weights = map (calculateNextLinearLayerErrorNToN 
 calculateNextNonLinearLayerErrors :: [LayerError] -> [[Float]] -> [LayerError]
 calculateNextNonLinearLayerErrors = zipWith (zipWith (*))
 
+calculateNextNormalizationLayerErrors :: [LayerError] -> [[Float]] -> [LayerError]
+calculateNextNormalizationLayerErrors = zipWith (zipWith (*))
+
 updateLayer :: Alpha -> Layer -> [LayerError] -> (Layer, [LayerError])
 updateLayer alpha (LinearLayer activations (Just inputs) weights biases) errors =
 	let
@@ -146,9 +162,15 @@ updateLayer alpha (LinearLayer activations (Just inputs) weights biases) errors 
 	in (LinearLayer Nothing Nothing newWeights newBiases, newErrors)
 updateLayer _ (NonLinearLayer (Just activations) (Just inputs) function) errors =
 	let
-		inputDerivatives = deepMap (nonLinearDerivative function) activations
-		newErrors = calculateNextNonLinearLayerErrors errors inputDerivatives
+		derivatives = deepMap (nonLinearDerivative function) activations
+		newErrors = calculateNextNonLinearLayerErrors errors derivatives
 	in (NonLinearLayer Nothing Nothing function, newErrors)
+updateLayer _ (NormalizationLayer (Just activations) (Just inputs) function) errors =
+	let
+		derivatives = map (normalizationDerivative function) activations
+		weightedDerivatives = zipWith (zipWith (\e -> map (* e))) errors derivatives
+		newErrors = deepMap sum $ map transpose weightedDerivatives
+	in (NormalizationLayer Nothing Nothing function, newErrors)
 updateLayer _ _ _ = error "Cannot update non-activated layer"
 
 updateNextLayer :: Alpha -> Layer -> ([LayerError], [Layer]) -> ([LayerError], [Layer])
