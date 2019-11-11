@@ -5,6 +5,28 @@ import Data.List
 type Vector = [Float]
 type Matrix = [[Float]]
 
+deepMap :: (a -> b) -> [[a]] -> [[b]]
+deepMap = map . map
+
+groupByCondition :: (a -> Bool) -> [a] -> ([a], [a])
+groupByCondition condition =
+	let fn candidate (yes, no) = if condition candidate
+		then (candidate:yes, no)
+		else (yes, candidate:no)
+	in foldr fn ([], [])
+
+weightedSum :: [Float] -> [Float] -> Float
+weightedSum input = sum . (zipWith (*) input)
+
+vectorMatrixMultiplication :: Vector -> Matrix -> Vector
+vectorMatrixMultiplication = map . weightedSum
+
+matrixMultiplication :: Matrix -> Matrix -> Matrix
+matrixMultiplication matrix1 matrix2 = map (\row -> vectorMatrixMultiplication row matrix2) matrix1
+
+mean :: [Float] -> Float
+mean ns = sum ns / fromIntegral (length ns)
+
 costFunctionShowPrefix :: String
 costFunctionShowPrefix = "CostFunction: <"
 
@@ -30,6 +52,29 @@ instance Read CostFunction where
 
 instance Eq CostFunction where
 	(CostFunction name1 _ _) == (CostFunction name2 _ _) = name1 == name2
+
+squaredError :: Float -> Float -> Float
+squaredError actual = (** 2) . (actual -)
+
+squaredErrorDerivative :: Float -> Float -> Float
+squaredErrorDerivative actual = (2 *) . (actual -)
+
+meanSquaredError :: CostFunction
+meanSquaredError =
+	let
+		calculate = mean . (uncurry (zipWith squaredError))
+		derivative = uncurry (zipWith squaredErrorDerivative)
+	in CostFunction "MSE" calculate derivative
+
+costFunctions :: [CostFunction]
+costFunctions = [meanSquaredError]
+
+resolveCostFunction :: String -> CostFunction
+resolveCostFunction requestedName =
+	let result = find ((requestedName ==) . costFunctionName) costFunctions
+	in case result of
+		Just costFunction -> costFunction
+		Nothing -> error "Cost function not found"
 
 nonLinearFunctionShowPrefix :: String
 nonLinearFunctionShowPrefix = "NonLinearFunction: <"
@@ -57,9 +102,12 @@ instance Read NonLinearFunction where
 instance Eq NonLinearFunction where
 	(NonLinearFunction name1 _ _) == (NonLinearFunction name2 _ _) = name1 == name2
 
-deepMap :: (a -> b) -> [[a]] -> [[b]]
-deepMap = map . map
-
+relu :: NonLinearFunction
+relu =
+	let
+		calculate = max 0
+		derivative = fromIntegral . fromEnum . (> 0)
+	in NonLinearFunction "relu" calculate derivative
 
 sigmoid :: NonLinearFunction
 sigmoid =
@@ -68,15 +116,8 @@ sigmoid =
 		derivative n = n * (1 - n)
 	in NonLinearFunction "sigmoid" calculate derivative
 
-relu :: NonLinearFunction
-relu =
-	let
-		calculate = max 0
-		derivative = fromIntegral . fromEnum . (> 0)
-	in NonLinearFunction "relu" calculate derivative
-
 nonLinearFunctions :: [NonLinearFunction]
-nonLinearFunctions = [sigmoid, relu]
+nonLinearFunctions = [relu, sigmoid]
 
 resolveNonLinearFunction :: String -> NonLinearFunction
 resolveNonLinearFunction requestedName =
@@ -84,39 +125,3 @@ resolveNonLinearFunction requestedName =
 	in case result of
 		Just nonLinearFunction -> nonLinearFunction
 		Nothing -> error "Non-linear function not found"
-
-
-weightedSum :: [Float] -> [Float] -> Float
-weightedSum input = sum . (zipWith (*) input)
-
-vectorMatrixMultiplication :: Vector -> Matrix -> Vector
-vectorMatrixMultiplication = map . weightedSum
-
-matrixMultiplication :: Matrix -> Matrix -> Matrix
-matrixMultiplication matrix1 matrix2 = map (\row -> vectorMatrixMultiplication row matrix2) matrix1
-
-mean :: [Float] -> Float
-mean ns = sum ns / fromIntegral (length ns)
-
-squaredError :: Float -> Float -> Float
-squaredError actual = (** 2) . (actual -)
-
-squaredErrorDerivative :: Float -> Float -> Float
-squaredErrorDerivative actual = (2 *) . (actual -)
-
-meanSquaredError :: CostFunction
-meanSquaredError =
-	let
-		calculate = mean . (uncurry (zipWith squaredError))
-		derivative = uncurry (zipWith squaredErrorDerivative)
-	in CostFunction "MSE" calculate derivative
-
-costFunctions :: [CostFunction]
-costFunctions = [meanSquaredError]
-
-resolveCostFunction :: String -> CostFunction
-resolveCostFunction requestedName =
-	let result = find ((requestedName ==) . costFunctionName) costFunctions
-	in case result of
-		Just costFunction -> costFunction
-		Nothing -> error "Cost function not found"
